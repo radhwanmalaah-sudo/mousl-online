@@ -414,7 +414,7 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', function () 
 document.documentElement.dir = 'rtl';
 document.documentElement.lang = 'ar';
 
-var SELLER_LINK = 'https://radhwanmalaah-sudo.github.io/mousl-online/seller.html';
+var SELLER_LINK = 'https://mousl.online/seller.html';
 function zoneOpts() { return [{ id: 'all', name: 'كل المناطق' }].concat(ZONES); }
 function iso(d) { return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
 function off(days) { var d = new Date(); d.setDate(d.getDate() + days); return iso(d); }
@@ -448,8 +448,9 @@ function renderStats() {
 }
 var editAdId = '';
 var lastAdInvite = null;
-var SHOP_LINK = 'https://radhwanmalaah-sudo.github.io/mousl-online/shop.html';
-var VENUE_LINK = 'https://radhwanmalaah-sudo.github.io/mousl-online/venue.html';
+var SHOP_LINK = 'https://mousl.online/shop.html';
+var VENUE_LINK = 'https://mousl.online/venue.html';
+var DEBTS_LINK = 'https://mousl.online/debts.html';
 function genCode() {
   var c = '';
   for (var i = 0; i < 8; i++) c += 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'.charAt(Math.floor(Math.random() * 32));
@@ -462,6 +463,10 @@ function adInviteText(a) {
   }
   return 'أهلاً ' + a.shop + '،\nهذا رابط صفحة محلك في مصلاوي اون لاين:\n' + adOwnerLink(a.ownerCode) + '\nكود الدخول: ' + a.ownerCode + '\nافتح الرابط وادخل الكود حتى تضيف منتجاتك وخدماتك.';
 }
+function debtsInviteText(a) {
+  return 'أهلاً ' + a.shop + '،\nصفحة متابعة الديون:\n' + DEBTS_LINK + '?c=' + encodeURIComponent(a.ownerCode || '') + '\nكود الدخول: ' + a.ownerCode + '\nافتح الرابط وادخل الكود حتى تسجّل ديون زبائنك وتسديداتهم.';
+}
+
 function renderList() {
   if (!ads.length) {
     $('list').innerHTML = '<div class="empty"><strong>ماكو إعلانات</strong><p>أضف أول إعلان من الفورم تحت.</p></div>';
@@ -485,6 +490,7 @@ function renderList() {
       '<div class="btns"><button class="btn-line" data-act="editad" data-id="' + a.id + '">عدّل</button>' +
       '<button class="btn-line" data-act="toggle" data-id="' + a.id + '">' + (a.active === false ? 'شغّل' : 'وقّف') + '</button>' +
       (a.ownerCode ? '<button class="btn-line" data-act="adinvite" data-id="' + a.id + '">رابط المعلن</button>' : '') +
+      (a.ownerCode ? '<button class="btn-line" data-act="debts" data-id="' + a.id + '">' + (a.debtsEnabled ? 'رابط الديون' : 'تفعيل الديون') + '</button>' : '') +
       (confirmId === a.id
         ? '<button class="btn-line danger" data-act="del" data-id="' + a.id + '">تأكيد الحذف</button><button class="btn-line" data-act="cancel">لا</button>'
         : '<button class="btn-line" data-act="ask" data-id="' + a.id + '">احذف</button>') + '</div></div>';
@@ -698,6 +704,38 @@ document.addEventListener('click', function (e) {
   else if (a === 'del') { db.collection('ads').doc(id).delete().catch(fail); confirmId = ''; editAdId = ''; }
   else if (a === 'editad') { var ea = ads.filter(function (x) { return x.id === id; })[0]; if (ea) fillAdForm(ea); return; }
   else if (a === 'adinvite') { var ia = ads.filter(function (x) { return x.id === id; })[0]; if (ia) { lastAdInvite = ia; renderList(); window.scrollTo(0, 0); } return; }
+  else if (a === 'debts') {
+    var da = ads.filter(function (x) { return x.id === id; })[0];
+    if (!da || !da.ownerCode) return;
+    if (!da.debtsEnabled) {
+      db.collection('ads').doc(id).update({ debtsEnabled: true }).then(function () {
+        da.debtsEnabled = true;
+        lastAdInvite = da;
+        // show debts invite instead
+        var txt = debtsInviteText(da);
+        var slot = $('invite-slot');
+        if (slot) {
+          slot.innerHTML = '<div class="invite"><h3>رابط صفحة الديون — ' + esc(da.shop) + '</h3>' +
+            '<div class="row"><span style="color:var(--ink-2);font-size:14px">كود الدخول</span><span class="codeb">' + esc(da.ownerCode) + '</span></div>' +
+            '<textarea id="debtstxt" readonly>' + esc(txt) + '</textarea>' +
+            '<div class="btns"><button class="btn-ok" data-act="copy" data-src="debtstxt">انسخ الرسالة</button></div></div>';
+        }
+        renderList();
+        window.scrollTo(0, 0);
+      }).catch(function (e) { alert(e.message || 'ما تفعّل'); });
+    } else {
+      var txt = debtsInviteText(da);
+      var slot = $('invite-slot');
+      if (slot) {
+        slot.innerHTML = '<div class="invite"><h3>رابط صفحة الديون — ' + esc(da.shop) + '</h3>' +
+          '<div class="row"><span style="color:var(--ink-2);font-size:14px">كود الدخول</span><span class="codeb">' + esc(da.ownerCode) + '</span></div>' +
+          '<textarea id="debtstxt" readonly>' + esc(txt) + '</textarea>' +
+          '<div class="btns"><button class="btn-ok" data-act="copy" data-src="debtstxt">انسخ الرسالة</button></div></div>';
+      }
+      window.scrollTo(0, 0);
+    }
+    return;
+  }
   else if (a === 'tab') { showTab(t.dataset.tab); return; }
   else if (a === 'copy') { copyText(t.dataset.src, t); return; }
   else if (a === 'stoggle') {
@@ -843,7 +881,7 @@ function signIn() {
   auth.signInWithPopup(prov).catch(function (e) {
     if (e && (e.code === 'auth/popup-blocked' || e.code === 'auth/operation-not-supported-in-this-environment')) { auth.signInWithRedirect(prov); return; }
     if (e && (e.code === 'auth/popup-closed-by-user' || e.code === 'auth/cancelled-popup-request')) return;
-    $('lerr').textContent = e && e.code === 'auth/unauthorized-domain' ? 'أضف الدومين radhwanmalaah-sudo.github.io بـ Authorized domains في Firebase.' : errText(e);
+    $('lerr').textContent = e && e.code === 'auth/unauthorized-domain' ? 'أضف الدومين mousl.online بـ Authorized domains في Firebase.' : errText(e);
   });
 }
 function signOut() { stopListening(); auth.signOut(); }

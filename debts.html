@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#A6311A">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ديون">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>مصلاوي اون لاين — متابعة الديون</title>
+<link rel="manifest" href="manifest-debts.json">
+<link rel="apple-touch-icon" href="icon-seller-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-seller-192.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=Lalezar&display=swap">
+<style>
+:root {
+  --bg: #EEF1EE; --surface: #FFFFFF; --surface-2: #E3E9E5; --ink: #17201D; --ink-2: #52605B;
+  --line: #D1D9D4; --tea: #A6311A; --tea-ink: #FFFFFF; --ok: #0E6B5F; --ok-bg: #D5EEE8;
+  --font-display: 'Lalezar', sans-serif; --font-body: 'IBM Plex Sans Arabic', sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #0F1514; --surface: #172120; --surface-2: #1F2C2A; --ink: #E7EEEB; --ink-2: #9DB0AA;
+    --line: #2A3A37; --tea: #E5755A; --tea-ink: #1A0A06; --ok: #5CD0C0; --ok-bg: #12352F; color-scheme: dark; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.6;
+  padding: 0 max(16px, env(safe-area-inset-right)) 40px max(16px, env(safe-area-inset-left)); }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+.app { max-width: 560px; margin-inline: auto; }
+.brand { font-family: var(--font-display); font-size: 28px; color: var(--tea); margin: 18px 0 6px; }
+h2 { font-size: 13px; font-weight: 600; letter-spacing: 0.04em; color: var(--ink-2); margin: 22px 0 10px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 14px; display: grid; gap: 8px; margin-bottom: 10px; }
+.shop { font-family: var(--font-display); font-size: 22px; line-height: 1.3; }
+.meta { color: var(--ink-2); font-size: 13px; }
+.btn { background: var(--tea); color: var(--tea-ink); border: 0; border-radius: 12px; padding: 11px 18px; font-weight: 600; }
+.btn-line { background: transparent; color: var(--ink); border: 1px solid var(--line); border-radius: 12px; padding: 8px 14px; font-weight: 500; font-size: 13px; }
+.btn-ok { background: var(--ok); color: #fff; border: 0; border-radius: 12px; padding: 8px 14px; font-weight: 600; }
+.btn-danger { color: var(--tea); }
+.btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.f { font-size: 12px; font-weight: 600; margin-bottom: 4px; display: block; }
+.in { width: 100%; background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+.in.code { direction: ltr; text-align: center; font-size: 22px; letter-spacing: 0.25em; font-weight: 600; }
+.err { color: var(--tea); font-size: 13px; min-height: 1.2em; margin: 0; }
+.note { color: var(--ink-2); font-size: 13px; margin: 6px 0; }
+.row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.price { font-weight: 600; direction: ltr; unicode-bidi: isolate; }
+.tabs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; background: var(--surface-2); border-radius: 14px; padding: 4px; margin: 12px 0 14px; }
+.tabs button { border: 0; background: transparent; border-radius: 12px; padding: 10px 6px; font-weight: 600; color: var(--ink-2); font-size: 13px; cursor: pointer; }
+.tabs button[aria-selected="true"] { background: var(--surface); color: var(--tea); box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+.report { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+.rep-item { background: var(--surface-2); border-radius: 12px; padding: 10px; text-align: center; }
+.rep-item .l { font-size: 11px; color: var(--ink-2); display: block; }
+.rep-item b { font-family: var(--font-display); font-size: 20px; color: var(--tea); font-weight: 400; }
+.debt { }
+.debt .name { font-weight: 600; font-size: 16px; }
+.debt .paid { color: var(--ok); }
+.empty { text-align: center; color: var(--ink-2); padding: 20px; }
+.instbox { margin-top: 10px; text-align: center; }
+.instbox .hint { margin: 6px 0 0; font-size: 12px; color: var(--ink-2); }
+[hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="brand" id="brand">مصلاوي اون لاين — ديون</div>
+
+  <section id="gate">
+    <p class="note">أدخل كود الدخول اللي وصلك من صاحب التطبيق.</p>
+    <form class="g" id="f-login" novalidate>
+      <div><label class="f" for="code">كود الدخول</label>
+        <input class="in code" id="code" maxlength="10" autocomplete="off" placeholder="XXXXXXXX"></div>
+      <p class="err" id="lerr" role="alert"></p>
+      <button class="btn" type="submit">دخول</button>
+    </form>
+  </section>
+
+  <section id="app" hidden>
+    <div class="card">
+      <div class="shop" id="shopname"></div>
+      <div class="meta" id="shopmeta"></div>
+      <div class="btns" style="margin-top:6px">
+        <button class="btn-line" data-act="logout">خروج</button>
+      </div>
+      <div class="instbox" id="instbox">
+        <button type="button" class="btn" data-act="install" style="width:100%;margin-top:8px">ثبّت الصفحة على الشاشة الرئيسية</button>
+        <p class="hint" id="instmsg"></p>
+      </div>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button type="button" role="tab" data-act="tab" data-tab="list" aria-selected="true">الديون</button>
+      <button type="button" role="tab" data-act="tab" data-tab="add" aria-selected="false">إضافة</button>
+      <button type="button" role="tab" data-act="tab" data-tab="report" aria-selected="false">تقرير</button>
+    </div>
+
+    <div id="pane-list" role="tabpanel">
+      <div class="report" id="summary">
+        <div class="rep-item"><span class="l">مفتوح</span><b id="sum-open">٠</b></div>
+        <div class="rep-item"><span class="l">المتبقي</span><b id="sum-remain">٠</b></div>
+      </div>
+      <input class="in" id="q" placeholder="بحث بالاسم أو الرقم" style="margin-bottom:10px">
+      <div id="dlist"></div>
+    </div>
+
+    <div id="pane-add" role="tabpanel" hidden>
+      <h2>إضافة دين جديد</h2>
+      <form id="f-add" class="g" novalidate>
+        <div><label class="f" for="dname">اسم الزبون</label>
+          <input class="in" id="dname" maxlength="40" required placeholder="مثال: أحمد"></div>
+        <div><label class="f" for="dphone">رقم الجوال (اختياري)</label>
+          <input class="in" id="dphone" type="tel" maxlength="14" placeholder="07701234567"></div>
+        <div><label class="f" for="damount">المبلغ</label>
+          <input class="in" id="damount" type="text" inputmode="decimal" placeholder="مثال: 15000" required></div>
+        <div><label class="f" for="dnote">ملاحظة (اختياري)</label>
+          <input class="in" id="dnote" maxlength="80" placeholder="سبب الدين أو تاريخ"></div>
+        <p class="err" id="aerr"></p>
+        <button class="btn" type="submit">حفظ الدين</button>
+      </form>
+    </div>
+
+    <div id="pane-report" role="tabpanel" hidden>
+      <h2>تقرير اليوم</h2>
+      <div class="report">
+        <div class="rep-item"><span class="l">ديون اليوم</span><b id="rep-today">٠</b></div>
+        <div class="rep-item"><span class="l">تسديدات اليوم</span><b id="rep-paid">٠</b></div>
+      </div>
+      <p class="note" id="rep-note"></p>
+    </div>
+  </section>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script>
+var FBCONFIG = { apiKey: 'AIzaSyDT27G2lUpfUPcAMvRIPkllY3bzbQv87Eg', authDomain: 'chaychi-61eaf.firebaseapp.com', projectId: 'chaychi-61eaf', storageBucket: 'chaychi-61eaf.firebasestorage.app', messagingSenderId: '669532553284', appId: '1:669532553284:web:b999af1fc4824c7affbc11' };
+var auth, db, fbOK = false;
+try {
+  firebase.initializeApp(FBCONFIG);
+  auth = firebase.auth();
+  db = firebase.firestore();
+  fbOK = true;
+} catch (e) { fbOK = false; }
+
+function $(id) { return document.getElementById(id); }
+function esc(t) { return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) { return { '&': '&', '<': '<', '>': '>', '"': '"', "'": '&#39;' }[c]; }); }
+function ar(n) {
+  var s = String(Math.round(Number(n) || 0));
+  return s.replace(/\d/g, function (d) { return '٠١٢٣٤٥٦٧٨٩'[d]; });
+}
+function westernDigits(s) { return String(s || '').replace(/[٠-٩]/g, function (d) { return '٠١٢٣٤٥٦٧٨٩'.indexOf(d); }); }
+function parseNum(s) {
+  var w = westernDigits(s).replace(/[^\d.]/g, '');
+  if (!w || w === '.') return NaN;
+  var n = Number(w);
+  return isFinite(n) ? Math.round(n * 100) / 100 : NaN;
+}
+function normCode(c) { return String(c || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, ''); }
+function dayKey(ts) {
+  var d = ts ? new Date(ts) : new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+function money(n, cur) {
+  if (n == null) return ar(0);
+  var x = Number(n) || 0;
+  if (Math.abs(x - Math.round(x)) < 1e-9) x = Math.round(x);
+  return cur === 'usd' ? (x + ' $') : (ar(x) + ' د.ع');
+}
+function ensureAuth() {
+  return new Promise(function (res, rej) {
+    if (!fbOK) { rej(new Error('firebase')); return; }
+    if (auth.currentUser) { res(auth.currentUser); return; }
+    auth.signInAnonymously().then(function (c) { res(c.user); }).catch(rej);
+  });
+}
+
+var ad = null, adId = null, debts = [], unsubDebts = null;
+var deferredInstall = null;
+window.addEventListener('beforeinstallprompt', function (e) {
+  e.preventDefault(); deferredInstall = e;
+  var box = $('instbox'); if (box) box.hidden = false;
+});
+function isStandalone() {
+  try { return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true; }
+  catch (e) { return false; }
+}
+function installApp(msgEl) {
+  if (deferredInstall) { deferredInstall.prompt(); deferredInstall = null; return; }
+  var ua = navigator.userAgent || '';
+  var msg = /iphone|ipad|ipod/i.test(ua)
+    ? 'من Safari: زر المشاركة ← «إضافة إلى الشاشة الرئيسية».'
+    : 'من قائمة المتصفح اختر تثبيت أو إضافة إلى الشاشة الرئيسية.';
+  if (msgEl) msgEl.textContent = msg;
+}
+if (isStandalone()) { var ib = $('instbox'); if (ib) ib.hidden = true; }
+
+function showTab(name) {
+  ['list', 'add', 'report'].forEach(function (k) {
+    var p = $('pane-' + k);
+    if (p) p.hidden = k !== name;
+    var b = document.querySelector('.tabs button[data-tab="' + k + '"]');
+    if (b) b.setAttribute('aria-selected', String(k === name));
+  });
+  try { localStorage.setItem('mousl-debts-tab', name); } catch (e) {}
+  if (name === 'report') renderReport();
+}
+
+function renderAll() {
+  if (!ad) return;
+  $('shopname').textContent = ad.shop || 'المحل';
+  $('shopmeta').textContent = 'متابعة الديون' + (ad.phone ? ' · ' + ad.phone : '');
+  renderList();
+  renderReport();
+}
+
+function remaining(d) { return Math.max(0, (Number(d.amount) || 0) - (Number(d.paid) || 0)); }
+
+function renderList() {
+  var q = ($('q') && $('q').value || '').trim().toLowerCase();
+  var open = debts.filter(function (d) {
+    if (d.status === 'paid') return false;
+    if (!q) return true;
+    return (d.name || '').toLowerCase().indexOf(q) >= 0 || (d.phone || '').indexOf(q) >= 0;
+  });
+  var remain = open.reduce(function (s, d) { return s + remaining(d); }, 0);
+  $('sum-open').textContent = ar(open.length);
+  $('sum-remain').textContent = money(remain, (ad && ad.currency) || 'iqd');
+  var list = $('dlist');
+  if (!list) return;
+  if (!open.length) {
+    list.innerHTML = '<div class="empty">ماكو ديون مفتوحة حالياً.</div>';
+    return;
+  }
+  var cur = (ad && ad.currency) || 'iqd';
+  list.innerHTML = open.map(function (d) {
+    var rem = remaining(d);
+    return '<div class="card debt" data-id="' + esc(d.id) + '">' +
+      '<div class="row"><div class="name">' + esc(d.name) + '</div><span class="price">' + money(rem, cur) + '</span></div>' +
+      (d.phone ? '<div class="meta">' + esc(d.phone) + '</div>' : '') +
+      (d.note ? '<div class="meta">' + esc(d.note) + '</div>' : '') +
+      (d.paid > 0 ? '<div class="meta paid">مسدّد: ' + money(d.paid, cur) + '</div>' : '') +
+      '<div class="btns">' +
+      '<button class="btn-ok" data-act="pay" data-id="' + esc(d.id) + '">تسديد</button>' +
+      '<button class="btn-line btn-danger" data-act="del" data-id="' + esc(d.id) + '">حذف</button>' +
+      '</div></div>';
+  }).join('');
+}
+
+function renderReport() {
+  var today = dayKey();
+  var todays = debts.filter(function (d) { return d.day === today || (d.createdAt && dayKey(d.createdAt) === today); });
+  var paidToday = debts.filter(function (d) {
+    return d.paidAt && dayKey(d.paidAt) === today;
+  }).reduce(function (s, d) { return s + (Number(d.paid) || 0); }, 0);
+  // simpler: sum of paid amounts that were updated today
+  var paidSum = 0;
+  debts.forEach(function (d) {
+    if (d.lastPayAt && dayKey(d.lastPayAt) === today) paidSum += (Number(d.lastPayAmount) || 0);
+  });
+  $('rep-today').textContent = ar(todays.length);
+  $('rep-paid').textContent = money(paidSum, (ad && ad.currency) || 'iqd');
+  $('rep-note').textContent = 'الديون المضافة اليوم: ' + ar(todays.length) + '. التسديدات المسجّلة اليوم تظهر أعلاه.';
+}
+
+function listenDebts(id) {
+  if (unsubDebts) { unsubDebts(); unsubDebts = null; }
+  unsubDebts = db.collection('debts').where('adId', '==', id).orderBy('createdAt', 'desc').limit(200)
+    .onSnapshot(function (snap) {
+      debts = snap.docs.map(function (d) { var x = d.data(); x.id = d.id; return x; });
+      renderAll();
+    }, function (e) {
+      // fallback without orderBy
+      unsubDebts = db.collection('debts').where('adId', '==', id).limit(200)
+        .onSnapshot(function (snap) {
+          debts = snap.docs.map(function (d) { var x = d.data(); x.id = d.id; return x; });
+          debts.sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
+          renderAll();
+        }, function (err) {
+          var list = $('dlist');
+          if (list) list.innerHTML = '<div class="empty">ما كدرت أقرأ الديون: ' + esc(err.message || '') + '</div>';
+        });
+    });
+}
+
+function openApp(id, data) {
+  adId = id; ad = data; ad.id = id;
+  $('gate').hidden = true; $('app').hidden = false;
+  ensureAuth().then(function (u) {
+    if (!u) throw new Error('auth');
+    return db.collection('ads').doc(id).update({ ownerUid: u.uid });
+  }).then(function () {
+    ad.ownerUid = auth.currentUser.uid;
+    listenDebts(id);
+  }).catch(function (e) {
+    var list = $('dlist');
+    if (list) list.innerHTML = '<div class="empty">تعذر تفعيل الصفحة: ' + esc(e.message || '') + '</div>';
+    setTimeout(function () { listenDebts(id); }, 1000);
+  });
+  renderAll();
+  try { showTab(localStorage.getItem('mousl-debts-tab') || 'list'); } catch (e) { showTab('list'); }
+}
+
+function logout(msg) {
+  if (unsubDebts) { unsubDebts(); unsubDebts = null; }
+  ad = null; adId = null; debts = [];
+  $('app').hidden = true; $('gate').hidden = false;
+  $('code').value = '';
+  if (msg) $('lerr').textContent = msg;
+}
+
+function loginWith(code) {
+  var c = normCode(code);
+  if (c.length < 6) { $('lerr').textContent = 'الكود قصير.'; return; }
+  $('lerr').textContent = '';
+  ensureAuth().then(function () {
+    return db.collection('ads').where('ownerCode', '==', c).limit(1).get();
+  }).then(function (snap) {
+    if (snap.empty) { $('lerr').textContent = 'الكود غير صحيح.'; return; }
+    var doc = snap.docs[0];
+    try { localStorage.setItem('mousl-debts-code', c); } catch (e) {}
+    openApp(doc.id, doc.data());
+  }).catch(function (e) {
+    $('lerr').textContent = e.message || 'خطأ في الدخول';
+  });
+}
+
+$('f-login').addEventListener('submit', function (e) {
+  e.preventDefault();
+  loginWith($('code').value);
+});
+
+$('f-add').addEventListener('submit', function (e) {
+  e.preventDefault();
+  if (!adId || !auth.currentUser) return;
+  var name = $('dname').value.trim();
+  var phone = $('dphone').value.trim().replace(/[\s-]/g, '');
+  var amount = parseNum($('damount').value);
+  var note = $('dnote').value.trim();
+  var err = '';
+  if (!name) err = 'الاسم مطلوب.';
+  else if (!amount || amount <= 0) err = 'المبلغ غير صحيح.';
+  $('aerr').textContent = err;
+  if (err) return;
+  var now = Date.now();
+  var doc = {
+    adId: adId,
+    ownerUid: auth.currentUser.uid,
+    name: name,
+    phone: phone || '',
+    amount: amount,
+    paid: 0,
+    note: note,
+    currency: (ad && ad.currency) || 'iqd',
+    status: 'open',
+    createdAt: now,
+    day: dayKey(now)
+  };
+  db.collection('debts').add(doc).then(function () {
+    $('dname').value = ''; $('dphone').value = ''; $('damount').value = ''; $('dnote').value = '';
+    showTab('list');
+  }).catch(function (e) {
+    $('aerr').textContent = e.message || 'ما انحفظ';
+  });
+});
+
+document.addEventListener('click', function (e) {
+  var t = e.target.closest('[data-act]');
+  if (!t) return;
+  var a = t.dataset.act, id = t.dataset.id;
+  if (a === 'tab') { showTab(t.dataset.tab); return; }
+  if (a === 'logout') { logout(); return; }
+  if (a === 'install') { installApp($('instmsg')); return; }
+  if (a === 'pay' && id) {
+    var d = debts.filter(function (x) { return x.id === id; })[0];
+    if (!d) return;
+    var rem = remaining(d);
+    var raw = prompt('كم تسديد؟ (اتركه فارغ لتسديد كامل ' + money(rem, d.currency || 'iqd') + ')', '');
+    if (raw === null) return;
+    var pay = raw.trim() === '' ? rem : parseNum(raw);
+    if (!pay || pay <= 0) return;
+    if (pay > rem) pay = rem;
+    var newPaid = (Number(d.paid) || 0) + pay;
+    var status = newPaid >= (Number(d.amount) || 0) - 0.01 ? 'paid' : 'open';
+    var patch = {
+      paid: newPaid,
+      status: status,
+      lastPayAt: Date.now(),
+      lastPayAmount: pay
+    };
+    if (status === 'paid') patch.paidAt = Date.now();
+    db.collection('debts').doc(id).update(patch).catch(function (e) { alert(e.message || 'ما انحفظ'); });
+    return;
+  }
+  if (a === 'del' && id) {
+    if (!confirm('حذف هذا الدين؟')) return;
+    db.collection('debts').doc(id).delete().catch(function (e) { alert(e.message || 'ما انحذف'); });
+  }
+});
+
+if ($('q')) $('q').addEventListener('input', renderList);
+
+// auto login
+(function () {
+  var c = '';
+  try { c = new URLSearchParams(location.search).get('c') || localStorage.getItem('mousl-debts-code') || ''; } catch (e) {}
+  if (c) {
+    $('code').value = c;
+    setTimeout(function () { loginWith(c); }, 300);
+  }
+})();
+</script>
+</body>
+</html>
