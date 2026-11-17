@@ -99,6 +99,8 @@ h2 { font-size: 13px; font-weight: 600; letter-spacing: 0.04em; color: var(--ink
       <div class="report" id="summary">
         <div class="rep-item"><span class="l">مفتوح</span><b id="sum-open">٠</b></div>
         <div class="rep-item"><span class="l">المتبقي</span><b id="sum-remain">٠</b></div>
+        <div class="rep-item"><span class="l">نقدي مقبوض</span><b id="sum-cash">٠</b></div>
+        <div class="rep-item"><span class="l">بطاقة مقبوض</span><b id="sum-card">٠</b></div>
       </div>
       <input class="in" id="q" placeholder="بحث بالاسم أو الرقم" style="margin-bottom:10px">
       <div id="dlist"></div>
@@ -126,11 +128,15 @@ h2 { font-size: 13px; font-weight: 600; letter-spacing: 0.04em; color: var(--ink
     </div>
 
     <div id="pane-report" role="tabpanel" hidden>
-      <h2>تقرير اليوم</h2>
+      <h2>تقرير التسديد</h2>
       <div class="report">
-        <div class="rep-item"><span class="l">ديون اليوم</span><b id="rep-today">٠</b></div>
-        <div class="rep-item"><span class="l">تسديدات اليوم</span><b id="rep-paid">٠</b></div>
+        <div class="rep-item"><span class="l">نقدي (اليوم)</span><b id="rep-cash">٠</b></div>
+        <div class="rep-item"><span class="l">بطاقة (اليوم)</span><b id="rep-card">٠</b></div>
+        <div class="rep-item"><span class="l">نقدي (الكل)</span><b id="rep-cash-all">٠</b></div>
+        <div class="rep-item"><span class="l">بطاقة (الكل)</span><b id="rep-card-all">٠</b></div>
       </div>
+      <h2>آخر التسديدات</h2>
+      <div id="pay-log"></div>
       <p class="note" id="rep-note"></p>
     </div>
   </section>
@@ -243,6 +249,14 @@ function renderList() {
   var remain = open.reduce(function (s, d) { return s + remaining(d); }, 0);
   $('sum-open').textContent = ar(open.length);
   $('sum-remain').textContent = money(remain, (ad && ad.currency) || 'iqd');
+  var cashAll = 0, cardAll = 0;
+  debts.forEach(function (d) {
+    cashAll += Number(d.cashPaid) || 0;
+    cardAll += Number(d.cardPaid) || 0;
+  });
+  var cur0 = (ad && ad.currency) || 'iqd';
+  if ($('sum-cash')) $('sum-cash').textContent = money(cashAll, cur0);
+  if ($('sum-card')) $('sum-card').textContent = money(cardAll, cur0);
   var list = $('dlist');
   if (!list) return;
   if (!open.length) {
@@ -263,6 +277,8 @@ function renderList() {
       (d.paid > 0 ? '<div class="meta paid">مسدّد: ' + money(d.paid, cur) + (method ? ' (' + method + ')' : '') + '</div>' : '') +
       '<div class="btns">' +
       '<button class="btn-ok" data-act="pay" data-id="' + esc(d.id) + '">تسديد</button>' +
+      '<button class="btn-line" data-act="newsale" data-id="' + esc(d.id) + '">بيع جديد</button>' +
+      '<button class="btn-line" data-act="remind" data-id="' + esc(d.id) + '">تذكير واتساب</button>' +
       '<button class="btn-line" data-act="edit" data-id="' + esc(d.id) + '">تعديل</button>' +
       '<button class="btn-line" data-act="share" data-id="' + esc(d.id) + '">مشاركة</button>' +
       '<button class="btn-line btn-danger" data-act="del" data-id="' + esc(d.id) + '">حذف</button>' +
@@ -272,18 +288,36 @@ function renderList() {
 
 function renderReport() {
   var today = dayKey();
-  var todays = debts.filter(function (d) { return d.day === today || (d.createdAt && dayKey(d.createdAt) === today); });
-  var paidToday = debts.filter(function (d) {
-    return d.paidAt && dayKey(d.paidAt) === today;
-  }).reduce(function (s, d) { return s + (Number(d.paid) || 0); }, 0);
-  // simpler: sum of paid amounts that were updated today
-  var paidSum = 0;
+  var cur = (ad && ad.currency) || 'iqd';
+  var cashToday = 0, cardToday = 0, cashAll = 0, cardAll = 0;
+  var log = [];
   debts.forEach(function (d) {
-    if (d.lastPayAt && dayKey(d.lastPayAt) === today) paidSum += (Number(d.lastPayAmount) || 0);
+    cashAll += Number(d.cashPaid) || 0;
+    cardAll += Number(d.cardPaid) || 0;
+    (d.payments || []).forEach(function (p) {
+      if (p.at && dayKey(p.at) === today) {
+        if (p.method === 'electronic') cardToday += Number(p.amount) || 0;
+        else cashToday += Number(p.amount) || 0;
+      }
+      log.push({ name: d.name, item: d.item, amount: p.amount, method: p.method, at: p.at });
+    });
   });
-  $('rep-today').textContent = ar(todays.length);
-  $('rep-paid').textContent = money(paidSum, (ad && ad.currency) || 'iqd');
-  $('rep-note').textContent = 'الديون المضافة اليوم: ' + ar(todays.length) + '. التسديدات المسجّلة اليوم تظهر أعلاه.';
+  if ($('rep-cash')) $('rep-cash').textContent = money(cashToday, cur);
+  if ($('rep-card')) $('rep-card').textContent = money(cardToday, cur);
+  if ($('rep-cash-all')) $('rep-cash-all').textContent = money(cashAll, cur);
+  if ($('rep-card-all')) $('rep-card-all').textContent = money(cardAll, cur);
+  log.sort(function (a, b) { return (b.at || 0) - (a.at || 0); });
+  var box = $('pay-log');
+  if (box) {
+    if (!log.length) box.innerHTML = '<div class="empty">ماكو تسديدات بعد.</div>';
+    else box.innerHTML = log.slice(0, 20).map(function (p) {
+      var m = p.method === 'electronic' ? 'بطاقة' : 'نقدي';
+      var dt = p.at ? new Date(p.at).toLocaleString('ar-IQ') : '';
+      return '<div class="card" style="padding:10px"><div class="row"><b>' + esc(p.name || '') + '</b><span class="price">' + money(p.amount, cur) + '</span></div>' +
+        '<div class="meta">' + m + (p.item ? ' · ' + esc(p.item) : '') + (dt ? ' · ' + dt : '') + '</div></div>';
+    }).join('');
+  }
+  if ($('rep-note')) $('rep-note').textContent = 'التقرير يجمع كل التسديدات المسجّلة (نقدي وبطاقة).';
 }
 
 function listenDebts(id) {
@@ -439,9 +473,17 @@ document.addEventListener('click', function (e) {
     var payMethod = (method.trim() === '2' || /الكترون|تحويل|online/i.test(method)) ? 'electronic' : 'cash';
     var newPaid = (Number(d.paid) || 0) + pay;
     var status = newPaid >= (Number(d.amount) || 0) - 0.01 ? 'paid' : 'open';
+    var cashPaid = (Number(d.cashPaid) || 0) + (payMethod === 'cash' ? pay : 0);
+    var cardPaid = (Number(d.cardPaid) || 0) + (payMethod === 'electronic' ? pay : 0);
+    var payments = Array.isArray(d.payments) ? d.payments.slice() : [];
+    payments.push({ amount: pay, method: payMethod, at: Date.now() });
+    if (payments.length > 30) payments = payments.slice(-30);
     var patch = {
       paid: newPaid,
       status: status,
+      cashPaid: cashPaid,
+      cardPaid: cardPaid,
+      payments: payments,
       lastPayAt: Date.now(),
       lastPayAmount: pay,
       lastPayMethod: payMethod
@@ -488,6 +530,42 @@ document.addEventListener('click', function (e) {
         try { navigator.clipboard.writeText(msg); alert('تم نسخ نص الحساب. الصقه في واتساب.'); }
         catch (e) { prompt('انسخ النص:', msg); }
       }
+    }
+    return;
+  }
+  if (a === 'newsale' && id) {
+    var nd = debts.filter(function (x) { return x.id === id; })[0];
+    if (!nd) return;
+    $('dname').value = nd.name || '';
+    $('dphone').value = nd.phone || '';
+    $('ditem').value = '';
+    $('damount').value = '';
+    $('ddate').value = dayKey();
+    $('dnote').value = '';
+    $('dedit').value = '';
+    $('f-add-btn').textContent = 'حفظ بيع جديد';
+    $('aerr').textContent = '';
+    showTab('add');
+    window.scrollTo(0, 0);
+    return;
+  }
+  if (a === 'remind' && id) {
+    var rd = debts.filter(function (x) { return x.id === id; })[0];
+    if (!rd) return;
+    var rem2 = remaining(rd);
+    var cur2 = rd.currency || (ad && ad.currency) || 'iqd';
+    var rmsg = 'السلام عليكم ' + (rd.name || '') + '،\n' +
+      'تذكير بحسابك لدى ' + (ad && ad.shop || 'المحل') + ':\n' +
+      (rd.item ? 'المادة: ' + rd.item + '\n' : '') +
+      'المبلغ المتبقي: ' + money(rem2, cur2) + '\n' +
+      'يرجى التسديد في أقرب وقت. شكراً.';
+    var phone = (rd.phone || '').replace(/\s+/g, '');
+    if (phone) {
+      var waNum = phone.replace(/^0/, '964').replace(/^\+/, '');
+      window.open('https://wa.me/' + waNum + '?text=' + encodeURIComponent(rmsg), '_blank');
+    } else {
+      try { navigator.clipboard.writeText(rmsg); alert('ماكو رقم. تم نسخ نص التذكير.'); }
+      catch (e) { prompt('انسخ نص التذكير:', rmsg); }
     }
     return;
   }
