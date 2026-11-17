@@ -111,12 +111,17 @@ h2 { font-size: 13px; font-weight: 600; letter-spacing: 0.04em; color: var(--ink
           <input class="in" id="dname" maxlength="40" required placeholder="مثال: أحمد"></div>
         <div><label class="f" for="dphone">رقم الجوال (اختياري)</label>
           <input class="in" id="dphone" type="tel" maxlength="14" placeholder="07701234567"></div>
+        <div><label class="f" for="ditem">اسم المادة / الصنف</label>
+          <input class="in" id="ditem" maxlength="40" placeholder="مثال: كيس رز، طباعة"></div>
         <div><label class="f" for="damount">المبلغ</label>
           <input class="in" id="damount" type="text" inputmode="decimal" placeholder="مثال: 15000" required></div>
+        <div><label class="f" for="ddate">التاريخ</label>
+          <input class="in" id="ddate" type="date"></div>
         <div><label class="f" for="dnote">ملاحظة (اختياري)</label>
-          <input class="in" id="dnote" maxlength="80" placeholder="سبب الدين أو تاريخ"></div>
+          <input class="in" id="dnote" maxlength="80" placeholder="سبب الدين أو تفاصيل"></div>
+        <input type="hidden" id="dedit" value="">
         <p class="err" id="aerr"></p>
-        <button class="btn" type="submit">حفظ الدين</button>
+        <button class="btn" type="submit" id="f-add-btn">حفظ الدين</button>
       </form>
     </div>
 
@@ -236,13 +241,19 @@ function renderList() {
   var cur = (ad && ad.currency) || 'iqd';
   list.innerHTML = open.map(function (d) {
     var rem = remaining(d);
+    var dateStr = d.date || (d.createdAt ? dayKey(d.createdAt) : '');
+    var method = d.lastPayMethod === 'electronic' ? 'إلكتروني' : (d.lastPayMethod === 'cash' ? 'نقدي' : '');
     return '<div class="card debt" data-id="' + esc(d.id) + '">' +
       '<div class="row"><div class="name">' + esc(d.name) + '</div><span class="price">' + money(rem, cur) + '</span></div>' +
+      (d.item ? '<div class="meta">المادة: ' + esc(d.item) + '</div>' : '') +
+      (dateStr ? '<div class="meta">التاريخ: ' + esc(dateStr) + '</div>' : '') +
       (d.phone ? '<div class="meta">' + esc(d.phone) + '</div>' : '') +
       (d.note ? '<div class="meta">' + esc(d.note) + '</div>' : '') +
-      (d.paid > 0 ? '<div class="meta paid">مسدّد: ' + money(d.paid, cur) + '</div>' : '') +
+      (d.paid > 0 ? '<div class="meta paid">مسدّد: ' + money(d.paid, cur) + (method ? ' (' + method + ')' : '') + '</div>' : '') +
       '<div class="btns">' +
       '<button class="btn-ok" data-act="pay" data-id="' + esc(d.id) + '">تسديد</button>' +
+      '<button class="btn-line" data-act="edit" data-id="' + esc(d.id) + '">تعديل</button>' +
+      '<button class="btn-line" data-act="share" data-id="' + esc(d.id) + '">مشاركة</button>' +
       '<button class="btn-line btn-danger" data-act="del" data-id="' + esc(d.id) + '">حذف</button>' +
       '</div></div>';
   }).join('');
@@ -336,34 +347,65 @@ $('f-add').addEventListener('submit', function (e) {
   if (!adId || !auth.currentUser) return;
   var name = $('dname').value.trim();
   var phone = $('dphone').value.trim().replace(/[\s-]/g, '');
+  var item = $('ditem').value.trim();
   var amount = parseNum($('damount').value);
+  var date = $('ddate').value || dayKey();
   var note = $('dnote').value.trim();
+  var editId = $('dedit').value;
   var err = '';
   if (!name) err = 'الاسم مطلوب.';
   else if (!amount || amount <= 0) err = 'المبلغ غير صحيح.';
   $('aerr').textContent = err;
   if (err) return;
   var now = Date.now();
-  var doc = {
-    adId: adId,
-    ownerUid: auth.currentUser.uid,
-    name: name,
-    phone: phone || '',
-    amount: amount,
-    paid: 0,
-    note: note,
-    currency: (ad && ad.currency) || 'iqd',
-    status: 'open',
-    createdAt: now,
-    day: dayKey(now)
-  };
-  db.collection('debts').add(doc).then(function () {
-    $('dname').value = ''; $('dphone').value = ''; $('damount').value = ''; $('dnote').value = '';
-    showTab('list');
-  }).catch(function (e) {
-    $('aerr').textContent = e.message || 'ما انحفظ';
-  });
+  if (editId) {
+    // تعديل
+    db.collection('debts').doc(editId).update({
+      name: name,
+      phone: phone || '',
+      item: item,
+      amount: amount,
+      date: date,
+      note: note,
+      updatedAt: now
+    }).then(function () {
+      resetAddForm();
+      showTab('list');
+    }).catch(function (e) {
+      $('aerr').textContent = e.message || 'ما انحفظ';
+    });
+  } else {
+    var doc = {
+      adId: adId,
+      ownerUid: auth.currentUser.uid,
+      name: name,
+      phone: phone || '',
+      item: item,
+      amount: amount,
+      paid: 0,
+      note: note,
+      date: date,
+      currency: (ad && ad.currency) || 'iqd',
+      status: 'open',
+      createdAt: now,
+      day: dayKey(now)
+    };
+    db.collection('debts').add(doc).then(function () {
+      resetAddForm();
+      showTab('list');
+    }).catch(function (e) {
+      $('aerr').textContent = e.message || 'ما انحفظ';
+    });
+  }
 });
+
+function resetAddForm() {
+  $('dname').value = ''; $('dphone').value = ''; $('ditem').value = '';
+  $('damount').value = ''; $('dnote').value = ''; $('ddate').value = '';
+  $('dedit').value = '';
+  $('f-add-btn').textContent = 'حفظ الدين';
+  $('aerr').textContent = '';
+}
 
 document.addEventListener('click', function (e) {
   var t = e.target.closest('[data-act]');
@@ -381,16 +423,61 @@ document.addEventListener('click', function (e) {
     var pay = raw.trim() === '' ? rem : parseNum(raw);
     if (!pay || pay <= 0) return;
     if (pay > rem) pay = rem;
+    var method = prompt('طريقة الدفع: اكتب 1 للنقدي أو 2 للإلكتروني', '1');
+    if (method === null) return;
+    var payMethod = (method.trim() === '2' || /الكترون|تحويل|online/i.test(method)) ? 'electronic' : 'cash';
     var newPaid = (Number(d.paid) || 0) + pay;
     var status = newPaid >= (Number(d.amount) || 0) - 0.01 ? 'paid' : 'open';
     var patch = {
       paid: newPaid,
       status: status,
       lastPayAt: Date.now(),
-      lastPayAmount: pay
+      lastPayAmount: pay,
+      lastPayMethod: payMethod
     };
     if (status === 'paid') patch.paidAt = Date.now();
     db.collection('debts').doc(id).update(patch).catch(function (e) { alert(e.message || 'ما انحفظ'); });
+    return;
+  }
+  if (a === 'edit' && id) {
+    var ed = debts.filter(function (x) { return x.id === id; })[0];
+    if (!ed) return;
+    $('dname').value = ed.name || '';
+    $('dphone').value = ed.phone || '';
+    $('ditem').value = ed.item || '';
+    $('damount').value = ed.amount || '';
+    $('ddate').value = ed.date || (ed.createdAt ? dayKey(ed.createdAt) : '');
+    $('dnote').value = ed.note || '';
+    $('dedit').value = ed.id;
+    $('f-add-btn').textContent = 'حفظ التعديل';
+    $('aerr').textContent = '';
+    showTab('add');
+    window.scrollTo(0, 0);
+    return;
+  }
+  if (a === 'share' && id) {
+    var sd = debts.filter(function (x) { return x.id === id; })[0];
+    if (!sd) return;
+    var rem = remaining(sd);
+    var cur = sd.currency || (ad && ad.currency) || 'iqd';
+    var msg = 'حساب ' + (sd.name || '') + (sd.item ? ' - ' + sd.item : '') + '\n' +
+      'المبلغ الكلي: ' + money(sd.amount, cur) + '\n' +
+      'المسدّد: ' + money(sd.paid || 0, cur) + '\n' +
+      'المتبقي: ' + money(rem, cur) +
+      (sd.date ? '\nالتاريخ: ' + sd.date : '') +
+      (sd.note ? '\n' + sd.note : '') +
+      '\n\nمن ' + (ad && ad.shop || 'المحل');
+    if (navigator.share) {
+      navigator.share({ title: 'حساب ' + (sd.name || ''), text: msg }).catch(function () {});
+    } else {
+      var wa = 'https://wa.me/' + (sd.phone ? sd.phone.replace(/^0/, '964') : '') + '?text=' + encodeURIComponent(msg);
+      if (sd.phone) {
+        window.open(wa, '_blank');
+      } else {
+        try { navigator.clipboard.writeText(msg); alert('تم نسخ نص الحساب. الصقه في واتساب.'); }
+        catch (e) { prompt('انسخ النص:', msg); }
+      }
+    }
     return;
   }
   if (a === 'del' && id) {
@@ -409,6 +496,7 @@ if ($('q')) $('q').addEventListener('input', renderList);
     $('code').value = c;
     setTimeout(function () { loginWith(c); }, 300);
   }
+  if ($('ddate') && !$('ddate').value) $('ddate').value = dayKey();
 })();
 </script>
 </body>
