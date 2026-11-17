@@ -1,6 +1,6 @@
 {
- "name": "مصلاوي — متابعة الديون",
- "short_name": "ديون",
+ "name": "مصلاوي — دفتر ديوني",
+ "short_name": "دفتر ديوني",
  "start_url": "./debts.html",
  "scope": "./",
  "display": "standalone",

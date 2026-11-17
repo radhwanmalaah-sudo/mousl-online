@@ -586,7 +586,7 @@ function drinksHtml(s) {
 }
 
 /* ---------- ads ---------- */
-function zoneAds() { var t = dayKey(); return ads.filter(function (a) { return a.active !== false && a.pageType !== 'venue' && (!a.start || t >= a.start) && (!a.end || t <= a.end); }); }
+function zoneAds() { var t = dayKey(); return ads.filter(function (a) { return a.active !== false && a.pageType !== 'venue' && a.pageType !== 'debts' && (!a.start || t >= a.start) && (!a.end || t <= a.end); }); }
 function marquee() {
   var txt = (APPCFG.bannerText && String(APPCFG.bannerText).trim()) || 'خلي اعلانك هنا للمعلنين من باب الترويج';
   var safe = esc(txt);

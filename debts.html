@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#A6311A">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="ديون">
+<meta name="apple-mobile-web-app-title" content="دفتر ديوني">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>مصلاوي اون لاين — متابعة الديون</title>
+<title>مصلاوي اون لاين — دفتر ديوني</title>
 <link rel="manifest" href="manifest-debts.json">
 <link rel="apple-touch-icon" href="icon-seller-192.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-seller-192.png">
@@ -64,7 +64,7 @@ h2 { font-size: 13px; font-weight: 600; letter-spacing: 0.04em; color: var(--ink
 </head>
 <body>
 <div class="app">
-  <div class="brand" id="brand">مصلاوي اون لاين — ديون</div>
+  <div class="brand" id="brand">مصلاوي اون لاين — دفتر ديوني</div>
 
   <section id="gate">
     <p class="note">أدخل كود الدخول اللي وصلك من صاحب التطبيق.</p>
@@ -90,7 +90,7 @@ h2 { font-size: 13px; font-weight: 600; letter-spacing: 0.04em; color: var(--ink
     </div>
 
     <div class="tabs" role="tablist">
-      <button type="button" role="tab" data-act="tab" data-tab="list" aria-selected="true">الديون</button>
+      <button type="button" role="tab" data-act="tab" data-tab="list" aria-selected="true">دفتر ديوني</button>
       <button type="button" role="tab" data-act="tab" data-tab="add" aria-selected="false">إضافة</button>
       <button type="button" role="tab" data-act="tab" data-tab="report" aria-selected="false">تقرير</button>
     </div>
@@ -186,20 +186,31 @@ var deferredInstall = null;
 window.addEventListener('beforeinstallprompt', function (e) {
   e.preventDefault(); deferredInstall = e;
   var box = $('instbox'); if (box) box.hidden = false;
+  var msg = $('instmsg'); if (msg) msg.textContent = 'اضغط الزر لتثبيت الصفحة كتطبيق.';
 });
 function isStandalone() {
   try { return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true; }
   catch (e) { return false; }
 }
 function installApp(msgEl) {
-  if (deferredInstall) { deferredInstall.prompt(); deferredInstall = null; return; }
+  if (deferredInstall) {
+    deferredInstall.prompt();
+    deferredInstall.userChoice.then(function (c) {
+      deferredInstall = null;
+      if (c && c.outcome === 'accepted' && msgEl) msgEl.textContent = 'تم التثبيت.';
+    }).catch(function () {});
+    return;
+  }
   var ua = navigator.userAgent || '';
   var msg = /iphone|ipad|ipod/i.test(ua)
-    ? 'من Safari: زر المشاركة ← «إضافة إلى الشاشة الرئيسية».'
-    : 'من قائمة المتصفح اختر تثبيت أو إضافة إلى الشاشة الرئيسية.';
+    ? 'من Safari: زر المشاركة (السهم) ← «إضافة إلى الشاشة الرئيسية».'
+    : (/android/i.test(ua)
+      ? 'من قائمة كروم (⋮) اختر «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية».'
+      : 'من قائمة المتصفح اختر تثبيت أو إضافة إلى الشاشة الرئيسية.');
   if (msgEl) msgEl.textContent = msg;
 }
 if (isStandalone()) { var ib = $('instbox'); if (ib) ib.hidden = true; }
+else { var ib2 = $('instbox'); if (ib2) ib2.hidden = false; }
 
 function showTab(name) {
   ['list', 'add', 'report'].forEach(function (k) {
@@ -215,7 +226,7 @@ function showTab(name) {
 function renderAll() {
   if (!ad) return;
   $('shopname').textContent = ad.shop || 'المحل';
-  $('shopmeta').textContent = 'متابعة الديون' + (ad.phone ? ' · ' + ad.phone : '');
+  $('shopmeta').textContent = 'دفتر ديوني' + (ad.phone ? ' · ' + ad.phone : '');
   renderList();
   renderReport();
 }

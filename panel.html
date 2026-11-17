@@ -185,8 +185,9 @@ textarea.in { resize: vertical; min-height: 64px; }
         <option value="sales">مبيعات — منتجات وطلب بالكمية</option>
         <option value="services">خدمات — عرض وتواصل فقط</option>
         <option value="venue">صالة / كافتريا — طاولات + قائمة</option>
+        <option value="debts">دفتر ديوني — متابعة ديون الزبائن</option>
       </select>
-      <p class="note" style="margin:6px 0 0;color:var(--ink-2);font-size:13px">مبيعات: منتجات. خدمات: تواصل فقط. صالة: طاولات مرقّمة وقائمة للزبون.</p>
+      <p class="note" style="margin:6px 0 0;color:var(--ink-2);font-size:13px">مبيعات: منتجات. خدمات: تواصل فقط. صالة: طاولات. دفتر ديوني: تسجيل وتسديد ديون الزبائن.</p>
     </div>
     <div class="f"><div class="labrow"><label for="text">نص الإعلان</label><button type="button" class="btn-clear" data-act="clear-text" id="btn-clear-text" title="مسح النص">مسح النص ✕</button></div>
 <textarea class="in" id="text" rows="6" placeholder="اكتب وصف المحل أو العرض بالتفصيل"></textarea><div class="cnt" id="cnt">٠ حرف</div></div>
@@ -461,6 +462,9 @@ function adInviteText(a) {
   if (a.pageType === 'venue') {
     return 'أهلاً ' + a.shop + '،\nرابط إدارة الصالة:\n' + adOwnerLink(a.ownerCode) + '\nكود الدخول: ' + a.ownerCode + '\n\nرابط زبائن الصالة (علّقه أو QR):\n' + VENUE_LINK + '?c=' + encodeURIComponent(a.ownerCode || '') + '\nالزبون يختار طاولة ويطلب من قائمتك.';
   }
+  if (a.pageType === 'debts') {
+    return 'أهلاً ' + a.shop + '،\nدفتر ديوني:\n' + DEBTS_LINK + '?c=' + encodeURIComponent(a.ownerCode || '') + '\nكود الدخول: ' + a.ownerCode + '\nافتح الرابط وادخل الكود حتى تسجّل ديون زبائنك وتسديداتهم.';
+  }
   return 'أهلاً ' + a.shop + '،\nهذا رابط صفحة محلك في مصلاوي اون لاين:\n' + adOwnerLink(a.ownerCode) + '\nكود الدخول: ' + a.ownerCode + '\nافتح الرابط وادخل الكود حتى تضيف منتجاتك وخدماتك.';
 }
 function debtsInviteText(a) {
@@ -481,7 +485,7 @@ function renderList() {
   }
   $('list').innerHTML = invHtml + ads.map(function (a) {
     var st = status(a);
-    var ptl = a.pageType === 'services' ? 'خدمات' : (a.pageType === 'venue' ? 'صالة' : 'مبيعات');
+    var ptl = a.pageType === 'services' ? 'خدمات' : (a.pageType === 'venue' ? 'صالة' : (a.pageType === 'debts' ? 'دفتر ديوني' : 'مبيعات'));
     return '<div class="card' + (st.k === 'off' ? ' dim' : '') + '"><div class="row"><div class="shop">' + esc(a.shop) + '</div><span class="pill ' + st.k + '">' + st.t + '</span></div>' +
       '<p class="txt">' + esc(a.text) + '</p>' +
       '<div class="meta"><span class="pill">' + ptl + '</span><span>' + esc(adZones(a)) + '</span><span>' + dshow(a.start) + ' إلى ' + dshow(a.end) + '</span><span class="ltr">' + esc(a.phone) + '</span></div>' +
@@ -549,7 +553,7 @@ function fillAdForm(a) {
   $('shop').value = a.shop || '';
   $('text').value = a.text || '';
   $('phone').value = a.phone || '';
-  if ($('ptype')) $('ptype').value = (a.pageType === 'services' || a.pageType === 'venue') ? a.pageType : 'sales';
+  if ($('ptype')) $('ptype').value = (a.pageType === 'services' || a.pageType === 'venue' || a.pageType === 'debts') ? a.pageType : 'sales';
   $('start').value = a.start || off(0);
   $('end').value = a.end || off(14);
   var zs = a.zones || [];
@@ -567,7 +571,7 @@ $('form').addEventListener('submit', function (e) {
   var shop = $('shop').value.trim(), text = $('text').value.trim(), phone = $('phone').value.trim().replace(/[\s-]/g, '');
   var st = $('start').value, en = $('end').value;
   var pageType = ($('ptype') && $('ptype').value) || 'sales';
-  if (pageType !== 'services' && pageType !== 'venue') pageType = 'sales';
+  if (pageType !== 'services' && pageType !== 'venue' && pageType !== 'debts') pageType = 'sales';
   var err = '';
   if (!shop) err = 'اكتب اسم المحل.';
   else if (!text) err = 'اكتب نص الإعلان.';
@@ -589,7 +593,9 @@ $('form').addEventListener('submit', function (e) {
     db.collection('ads').add({
       shop: shop, text: text, phone: phone, zones: zs, start: st, end: en, pageType: pageType,
       active: true, views: 0, clicks: 0, createdAt: Date.now(),
-      ownerCode: code, currency: (pageType === 'services' ? 'none' : 'iqd'), items: [], tableCount: pageType === 'venue' ? 10 : 0
+      ownerCode: code, currency: (pageType === 'services' ? 'none' : 'iqd'), items: [],
+      tableCount: pageType === 'venue' ? 10 : 0,
+      debtsEnabled: pageType === 'debts'
     }).then(function (ref) {
       lastAdInvite = { id: ref.id, shop: shop, ownerCode: code, pageType: pageType };
       resetAdForm(); window.scrollTo(0, 0);
