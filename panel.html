@@ -414,7 +414,7 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', function () 
 document.documentElement.dir = 'rtl';
 document.documentElement.lang = 'ar';
 
-var SELLER_LINK = 'https://mousl.online/seller.html';
+var SELLER_LINK = 'https://radhwanmalaah-sudo.github.io/mousl-online/seller.html';
 function zoneOpts() { return [{ id: 'all', name: 'كل المناطق' }].concat(ZONES); }
 function iso(d) { return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
 function off(days) { var d = new Date(); d.setDate(d.getDate() + days); return iso(d); }
@@ -448,9 +448,9 @@ function renderStats() {
 }
 var editAdId = '';
 var lastAdInvite = null;
-var SHOP_LINK = 'https://mousl.online/shop.html';
-var VENUE_LINK = 'https://mousl.online/venue.html';
-var DEBTS_LINK = 'https://mousl.online/debts.html';
+var SHOP_LINK = 'https://radhwanmalaah-sudo.github.io/mousl-online/shop.html';
+var VENUE_LINK = 'https://radhwanmalaah-sudo.github.io/mousl-online/venue.html';
+var DEBTS_LINK = 'https://radhwanmalaah-sudo.github.io/mousl-online/debts.html';
 function genCode() {
   var c = '';
   for (var i = 0; i < 8; i++) c += 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'.charAt(Math.floor(Math.random() * 32));
@@ -881,7 +881,7 @@ function signIn() {
   auth.signInWithPopup(prov).catch(function (e) {
     if (e && (e.code === 'auth/popup-blocked' || e.code === 'auth/operation-not-supported-in-this-environment')) { auth.signInWithRedirect(prov); return; }
     if (e && (e.code === 'auth/popup-closed-by-user' || e.code === 'auth/cancelled-popup-request')) return;
-    $('lerr').textContent = e && e.code === 'auth/unauthorized-domain' ? 'أضف الدومين mousl.online بـ Authorized domains في Firebase.' : errText(e);
+    $('lerr').textContent = e && e.code === 'auth/unauthorized-domain' ? 'أضف الدومين radhwanmalaah-sudo.github.io بـ Authorized domains في Firebase.' : errText(e);
   });
 }
 function signOut() { stopListening(); auth.signOut(); }
