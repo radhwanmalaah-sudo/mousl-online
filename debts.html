@@ -93,12 +93,15 @@ h2 { font-size: 13px; font-weight: 600; letter-spacing: 0.04em; color: var(--ink
       <button type="button" role="tab" data-act="tab" data-tab="list" aria-selected="true">دفتر ديوني</button>
       <button type="button" role="tab" data-act="tab" data-tab="add" aria-selected="false">إضافة</button>
       <button type="button" role="tab" data-act="tab" data-tab="report" aria-selected="false">تقرير</button>
+      <button type="button" role="tab" data-act="tab" data-tab="req" aria-selected="false">طلبات</button>
     </div>
 
     <div id="pane-list" role="tabpanel">
       <div class="report" id="summary">
         <div class="rep-item"><span class="l">مفتوح</span><b id="sum-open">٠</b></div>
         <div class="rep-item"><span class="l">المتبقي</span><b id="sum-remain">٠</b></div>
+        <div class="rep-item"><span class="l">إجمالي المبيعات</span><b id="sum-sales">٠</b></div>
+        <div class="rep-item"><span class="l">الربح الكلي</span><b id="sum-profit">٠</b></div>
         <div class="rep-item"><span class="l">نقدي مقبوض</span><b id="sum-cash">٠</b></div>
         <div class="rep-item"><span class="l">بطاقة مقبوض</span><b id="sum-card">٠</b></div>
       </div>
@@ -115,8 +118,10 @@ h2 { font-size: 13px; font-weight: 600; letter-spacing: 0.04em; color: var(--ink
           <input class="in" id="dphone" type="tel" maxlength="14" placeholder="07701234567"></div>
         <div><label class="f" for="ditem">اسم المادة / الصنف</label>
           <input class="in" id="ditem" maxlength="40" placeholder="مثال: كيس رز، طباعة"></div>
-        <div><label class="f" for="damount">المبلغ</label>
+        <div><label class="f" for="damount">سعر البيع</label>
           <input class="in" id="damount" type="text" inputmode="decimal" placeholder="مثال: 15000" required></div>
+        <div><label class="f" for="dcost">كلفة المادة (اختياري)</label>
+          <input class="in" id="dcost" type="text" inputmode="decimal" placeholder="مثال: 10000"></div>
         <div><label class="f" for="ddate">التاريخ</label>
           <input class="in" id="ddate" type="date"></div>
         <div><label class="f" for="dnote">ملاحظة (اختياري)</label>
@@ -138,6 +143,21 @@ h2 { font-size: 13px; font-weight: 600; letter-spacing: 0.04em; color: var(--ink
       <h2>آخر التسديدات</h2>
       <div id="pay-log"></div>
       <p class="note" id="rep-note"></p>
+    </div>
+
+    <div id="pane-req" role="tabpanel" hidden>
+      <h2>طلبات الزبائن</h2>
+      <p class="note">سجّل هنا إذا أحد طلبك أو سأل عنك حتى ترجع له.</p>
+      <form id="f-req" class="g" novalidate>
+        <div><label class="f" for="rname">اسم الزبون</label>
+          <input class="in" id="rname" maxlength="40" placeholder="مثال: علي"></div>
+        <div><label class="f" for="rphone">رقم (اختياري)</label>
+          <input class="in" id="rphone" type="tel" maxlength="14"></div>
+        <div><label class="f" for="rnote">ماذا يريد</label>
+          <input class="in" id="rnote" maxlength="80" placeholder="مثال: يسأل عن التليفون"></div>
+        <button class="btn" type="submit">سجّل الطلب</button>
+      </form>
+      <div id="rlist" style="margin-top:14px"></div>
     </div>
   </section>
 </div>
@@ -219,7 +239,7 @@ if (isStandalone()) { var ib = $('instbox'); if (ib) ib.hidden = true; }
 else { var ib2 = $('instbox'); if (ib2) ib2.hidden = false; }
 
 function showTab(name) {
-  ['list', 'add', 'report'].forEach(function (k) {
+  ['list', 'add', 'report', 'req'].forEach(function (k) {
     var p = $('pane-' + k);
     if (p) p.hidden = k !== name;
     var b = document.querySelector('.tabs button[data-tab="' + k + '"]');
@@ -249,14 +269,20 @@ function renderList() {
   var remain = open.reduce(function (s, d) { return s + remaining(d); }, 0);
   $('sum-open').textContent = ar(open.length);
   $('sum-remain').textContent = money(remain, (ad && ad.currency) || 'iqd');
-  var cashAll = 0, cardAll = 0;
+  var cashAll = 0, cardAll = 0, salesAll = 0, profitAll = 0;
   debts.forEach(function (d) {
     cashAll += Number(d.cashPaid) || 0;
     cardAll += Number(d.cardPaid) || 0;
+    var amt = Number(d.amount) || 0;
+    var cost = Number(d.cost) || 0;
+    salesAll += amt;
+    if (cost > 0) profitAll += (amt - cost);
   });
   var cur0 = (ad && ad.currency) || 'iqd';
   if ($('sum-cash')) $('sum-cash').textContent = money(cashAll, cur0);
   if ($('sum-card')) $('sum-card').textContent = money(cardAll, cur0);
+  if ($('sum-sales')) $('sum-sales').textContent = money(salesAll, cur0);
+  if ($('sum-profit')) $('sum-profit').textContent = money(profitAll, cur0);
   var list = $('dlist');
   if (!list) return;
   if (!open.length) {
@@ -271,6 +297,7 @@ function renderList() {
     return '<div class="card debt" data-id="' + esc(d.id) + '">' +
       '<div class="row"><div class="name">' + esc(d.name) + '</div><span class="price">' + money(rem, cur) + '</span></div>' +
       (d.item ? '<div class="meta">المادة: ' + esc(d.item) + '</div>' : '') +
+      (d.cost > 0 ? '<div class="meta">كلفة: ' + money(d.cost, cur) + ' · ربح: ' + money((d.amount||0)-(d.cost||0), cur) + '</div>' : '') +
       (dateStr ? '<div class="meta">التاريخ: ' + esc(dateStr) + '</div>' : '') +
       (d.phone ? '<div class="meta">' + esc(d.phone) + '</div>' : '') +
       (d.note ? '<div class="meta">' + esc(d.note) + '</div>' : '') +
@@ -355,6 +382,7 @@ function openApp(id, data) {
     setTimeout(function () { listenDebts(id); }, 1000);
   });
   renderAll();
+  loadRequests();
   try { showTab(localStorage.getItem('mousl-debts-tab') || 'list'); } catch (e) { showTab('list'); }
 }
 
@@ -410,6 +438,7 @@ $('f-add').addEventListener('submit', function (e) {
       phone: phone || '',
       item: item,
       amount: amount,
+      cost: parseNum($('dcost').value) || 0,
       date: date,
       note: note,
       updatedAt: now
@@ -427,6 +456,7 @@ $('f-add').addEventListener('submit', function (e) {
       phone: phone || '',
       item: item,
       amount: amount,
+      cost: parseNum($('dcost').value) || 0,
       paid: 0,
       note: note,
       date: date,
@@ -446,7 +476,7 @@ $('f-add').addEventListener('submit', function (e) {
 
 function resetAddForm() {
   $('dname').value = ''; $('dphone').value = ''; $('ditem').value = '';
-  $('damount').value = ''; $('dnote').value = ''; $('ddate').value = '';
+  $('damount').value = ''; $('dcost').value = ''; $('dnote').value = ''; $('ddate').value = '';
   $('dedit').value = '';
   $('f-add-btn').textContent = 'حفظ الدين';
   $('aerr').textContent = '';
@@ -499,6 +529,7 @@ document.addEventListener('click', function (e) {
     $('dphone').value = ed.phone || '';
     $('ditem').value = ed.item || '';
     $('damount').value = ed.amount || '';
+    $('dcost').value = ed.cost || '';
     $('ddate').value = ed.date || (ed.createdAt ? dayKey(ed.createdAt) : '');
     $('dnote').value = ed.note || '';
     $('dedit').value = ed.id;
@@ -569,6 +600,11 @@ document.addEventListener('click', function (e) {
     }
     return;
   }
+  if (a === 'rdel') {
+    var ri = Number(t.dataset.i);
+    if (ri >= 0 && ri < requests.length) { requests.splice(ri, 1); saveRequests(); }
+    return;
+  }
   if (a === 'del' && id) {
     if (!confirm('حذف هذا الدين؟')) return;
     db.collection('debts').doc(id).delete().catch(function (e) { alert(e.message || 'ما انحذف'); });
@@ -576,6 +612,37 @@ document.addEventListener('click', function (e) {
 });
 
 if ($('q')) $('q').addEventListener('input', renderList);
+
+
+var requests = [];
+function loadRequests() {
+  try { requests = JSON.parse(localStorage.getItem('mousl-reqs-' + adId) || '[]'); } catch (e) { requests = []; }
+  renderRequests();
+}
+function saveRequests() {
+  try { localStorage.setItem('mousl-reqs-' + adId, JSON.stringify(requests)); } catch (e) {}
+  renderRequests();
+}
+function renderRequests() {
+  var box = $('rlist');
+  if (!box) return;
+  if (!requests.length) { box.innerHTML = '<div class="empty">ماكو طلبات حالياً.</div>'; return; }
+  box.innerHTML = requests.slice().reverse().map(function (r, i) {
+    var idx = requests.length - 1 - i;
+    return '<div class="card"><div class="row"><b>' + esc(r.name) + '</b><span class="meta">' + (r.at ? new Date(r.at).toLocaleDateString('ar-IQ') : '') + '</span></div>' +
+      (r.phone ? '<div class="meta">' + esc(r.phone) + '</div>' : '') +
+      (r.note ? '<div class="meta">' + esc(r.note) + '</div>' : '') +
+      '<div class="btns"><button class="btn-line btn-danger" data-act="rdel" data-i="' + idx + '">حذف</button></div></div>';
+  }).join('');
+}
+if ($('f-req')) $('f-req').addEventListener('submit', function (e) {
+  e.preventDefault();
+  var name = $('rname').value.trim();
+  if (!name) return;
+  requests.push({ name: name, phone: $('rphone').value.trim(), note: $('rnote').value.trim(), at: Date.now() });
+  $('rname').value = ''; $('rphone').value = ''; $('rnote').value = '';
+  saveRequests();
+});
 
 // auto login
 (function () {
