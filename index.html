@@ -255,7 +255,11 @@ label.f { display: block; font-weight: 600; font-size: 14px; margin-bottom: 6px;
     <div class="list" id="list"></div>
     <div id="adslot"></div>
     <button class="btn-line" data-act="test" style="margin-top:10px">جرّب الصوت</button>
-    <div class="instbox" id="instbox"><button class="btn-line" data-act="install">ثبّت التطبيق على الشاشة الرئيسية</button><p class="hint" id="instmsg"></p></div>
+    <div class="instbox" id="instbox">
+      <button class="btn-line" data-act="share-page" style="margin-bottom:8px">شارك الصفحة ↗</button>
+      <button class="btn-line" data-act="install">ثبّت التطبيق على الشاشة الرئيسية</button>
+      <p class="hint" id="instmsg"></p>
+    </div>
     <p class="demo-note">إذا ما سمعت شي: تأكد الجوال مو على صامت وارفع صوت الوسائط.</p>
   </main>
 
@@ -714,6 +718,22 @@ function shareAd(id) {
     prompt('انسخ رابط الإعلان:', url);
   }
 }
+function sharePage() {
+  var url = location.origin + location.pathname;
+  var title = 'مصلاوي اون لاين';
+  var text = 'شوف الإعلانات والخدمات في مصلاوي اون لاين';
+  if (navigator.share) {
+    navigator.share({ title: title, text: text, url: url }).catch(function () {});
+    return;
+  }
+  try {
+    navigator.clipboard.writeText(url).then(function () {
+      alert('تم نسخ رابط الصفحة. الصقه بأي تطبيق.');
+    }).catch(function () { prompt('انسخ رابط الصفحة:', url); });
+  } catch (e) {
+    prompt('انسخ رابط الصفحة:', url);
+  }
+}
 function openAd(id) {
   if (adOpenId !== id) adCart = {};
   adOpenId = adOpenId === id ? '' : id;
@@ -1075,7 +1095,8 @@ document.addEventListener('click', function (e) {
     e.stopPropagation();
     sendAdOrder(id);
     return;
-  } else if (a === 'ad-share') {
+  } else if (a === 'share-page') { sharePage(); return; }
+  else if (a === 'ad-share') {
     e.preventDefault();
     e.stopPropagation();
     shareAd(id);
