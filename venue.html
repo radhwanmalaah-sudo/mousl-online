@@ -17,6 +17,16 @@
     --line: #2A3A37; --tea: #E5755A; --tea-ink: #1A0A06; color-scheme: dark; }
 }
 * { box-sizing: border-box; }
+.preview-bar {
+  position: sticky; top: 0; z-index: 50;
+  background: var(--tea); color: var(--tea-ink);
+  padding: 10px 14px; display: flex; justify-content: space-between; align-items: center;
+  font-weight: 600; font-size: 14px;
+}
+.preview-bar button {
+  background: #fff; color: var(--tea); border: 0; border-radius: 10px;
+  padding: 6px 14px; font-weight: 600; cursor: pointer;
+}
 body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.55;
   padding: 0 max(14px, env(safe-area-inset-right)) 100px max(14px, env(safe-area-inset-left)); }
 button, input, select { font: inherit; color: inherit; }
@@ -49,6 +59,10 @@ h2 { font-size: 13px; font-weight: 600; color: var(--ink-2); margin: 18px 0 8px;
 </style>
 </head>
 <body>
+<div id="preview-bar" class="preview-bar" hidden>
+  <span>معاينة صفحة الزبائن</span>
+  <button type="button" id="btn-back">رجوع للإعدادات</button>
+</div>
 <div class="app">
   <div class="brand" id="vname">الصالة</div>
   <div class="sub" id="vsub">جاري التحميل...</div>
@@ -358,6 +372,20 @@ document.addEventListener('click', function (e) {
   var q = new URLSearchParams(location.search).get('c') || '';
   if (q) loadVenue(q);
   else $('vsub').textContent = 'افتح الرابط الكامل اللي وصلك من الصالة.';
+})();
+
+// preview mode
+(function () {
+  var params = new URLSearchParams(location.search);
+  if (params.get('preview') === '1') {
+    var bar = document.getElementById('preview-bar');
+    if (bar) bar.hidden = false;
+    var btn = document.getElementById('btn-back');
+    if (btn) btn.addEventListener('click', function () {
+      if (window.opener) { window.close(); }
+      else { history.back(); }
+    });
+  }
 })();
 </script>
 </body>

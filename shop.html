@@ -171,7 +171,10 @@ form.g { background: var(--surface); border: 1px solid var(--line); border-radiu
             </div>
           </div>
           <p class="note" id="venue-link-note" style="margin:8px 0 0"></p>
-          <div class="btns"><button class="btn-line" data-act="copy-venue" type="button">انسخ رابط الزبائن</button></div>
+          <div class="btns">
+            <button class="btn-line" data-act="copy-venue" type="button">انسخ رابط الزبائن</button>
+            <button class="btn" data-act="preview-venue" type="button">معاينة صفحة الزبائن</button>
+          </div>
         </div>
 
         <h2>رمز QR للزبائن</h2>
@@ -787,6 +790,12 @@ document.addEventListener('click', function (e) {
   var t = e.target.closest('[data-act]');
   if (!t) return;
   var a = t.dataset.act;
+  if (a === 'preview-venue') {
+    var link = window._venueLink || '';
+    if (!link) { alert('ماكو رابط بعد.'); return; }
+    window.open(link + '&preview=1', '_blank');
+    return;
+  }
   if (a === 'tab') { showTab(t.dataset.tab); return; }
   if (a === 'install') { installApp($('instmsg')); return; }
   if (a === 'snd') { toggleSound(); return; }
