@@ -206,7 +206,9 @@ function renderMenu() {
   }
   $('list').innerHTML = items.map(function (it, i) {
     var q = cart[i] || 0;
-    return '<div class="card"><div class="row"><div><div class="name">' + esc(it.name) + '</div>' +
+    return '<div class="card">' +
+      (it.img ? '<img src="' + esc(it.img) + '" alt="" style="width:100%;max-height:180px;object-fit:cover;border-radius:12px;margin-bottom:8px">' : '') +
+      '<div class="row"><div><div class="name">' + esc(it.name) + '</div>' +
       (it.desc ? '<div class="meta">' + esc(it.desc) + '</div>' : '') +
       '</div><div class="price">' + esc(money(it.price, cur)) + '</div></div>' +
       '<div class="qty" style="margin-top:8px">' +
