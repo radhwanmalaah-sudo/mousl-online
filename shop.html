@@ -200,6 +200,9 @@ form.g { background: var(--surface); border: 1px solid var(--line); border-radiu
           <input class="in" id="iprice" type="text" inputmode="numeric" maxlength="12" pattern="[0-9٠-٩.]*" placeholder="مثال: 120000"></div>
         <div><label class="f" for="idesc">وصف مختصر (اختياري)</label>
           <input class="in" id="idesc" maxlength="80" placeholder="جملة قصيرة"></div>
+        <div><label class="f" for="iimg">رابط الصورة (اختياري)</label>
+          <input class="in" id="iimg" type="url" placeholder="https://... الصق رابط الصورة هنا" dir="ltr"></div>
+        <p class="note" style="margin:0;font-size:12px;color:var(--ink-2)">ارفع الصورة على imgbb.com أو أي موقع، وانسخ الرابط والصقه هنا.</p>
         <p class="err" id="ierr" role="alert"></p>
         <button class="btn" type="submit" id="f-item-btn">أضف</button>
       </form>
@@ -454,6 +457,7 @@ function renderItems() {
   $('ilist').innerHTML = items.map(function (it, i) {
     return '<div class="card"><div class="row"><div><div class="shop" style="font-size:18px">' + esc(it.name) + '</div>' +
       '<div class="meta">' +
+      (it.img ? '<img src="' + esc(it.img) + '" alt="" style="width:48px;height:48px;object-fit:cover;border-radius:8px;margin-left:8px">' : '') +
       (sales && it.price != null && it.price !== '' && cur !== 'none' ? '<span class="price">' + esc(money(it.price, cur)) + '</span>' : '<span class="pill">' + (sales ? 'منتج' : 'خدمة') + '</span>') +
       '</div>' + (it.desc ? '<div class="meta">' + esc(it.desc) + '</div>' : '') +
       '</div><button class="btn-line danger" data-act="delitem" data-i="' + i + '">احذف</button></div></div>';
@@ -764,10 +768,17 @@ $('f-item').addEventListener('submit', function (e) {
     if (isNaN(p) || p < 0 || p > 999999999) { $('ierr').textContent = 'السعر من ٠ إلى ٩٩٩٬٩٩٩٬٩٩٩.'; return; }
     item.price = p;
   }
+  var imgUrl = ($('iimg') && $('iimg').value.trim()) || '';
+  if (imgUrl && !/^https?:\/\//i.test(imgUrl)) {
+    $('ierr').textContent = 'الرابط لازم يبدأ بـ http أو https.';
+    return;
+  }
+  if (imgUrl) item.img = imgUrl;
   var items = (ad.items || []).slice();
   items.push(item);
   db.collection('ads').doc(adId).update({ items: items }).then(function () {
     $('iname').value = ''; $('iprice').value = ''; $('idesc').value = '';
+    if ($('iimg')) $('iimg').value = '';
     $('ierr').textContent = '';
   }).catch(function (e) { $('ierr').textContent = e.message || 'ما انحفظ.'; });
 });
