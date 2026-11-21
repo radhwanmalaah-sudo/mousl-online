@@ -251,14 +251,12 @@ function showMenu() {
   updateBar();
 }
 
-function loadVenue(code) {
-  var c = normCode(code);
-  if (c.length < 6) { $('vsub').textContent = 'الرابط غير صحيح.'; return; }
+function loadVenue(id) {
+  if (!/^[A-Za-z0-9]{6,40}$/.test(id || '')) { $('vsub').textContent = 'الرابط غير صحيح.'; return; }
   ensureAuth().then(function () {
-    return db.collection('ads').where('ownerCode', '==', c).limit(1).get();
-  }).then(function (snap) {
-    if (snap.empty) { $('vsub').textContent = 'ماكو صالة مرتبطة بهذا الرابط.'; return; }
-    var doc = snap.docs[0];
+    return db.collection('ads').doc(id).get();
+  }).then(function (doc) {
+    if (!doc.exists) { $('vsub').textContent = 'ماكو صالة مرتبطة بهذا الرابط.'; return; }
     ad = doc.data(); adId = doc.id;
     if (ad.pageType !== 'venue') { $('vsub').textContent = 'هذا الرابط مو مخصص لصالة.'; return; }
     if (ad.active === false) { $('vsub').textContent = 'الصالة متوقفة حالياً.'; return; }
@@ -369,7 +367,7 @@ document.addEventListener('click', function (e) {
 });
 
 (function () {
-  var q = new URLSearchParams(location.search).get('c') || '';
+  var q = new URLSearchParams(location.search).get('a') || '';
   if (q) loadVenue(q);
   else $('vsub').textContent = 'افتح الرابط الكامل اللي وصلك من الصالة.';
 })();

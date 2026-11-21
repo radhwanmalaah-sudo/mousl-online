@@ -481,7 +481,7 @@ function renderAll() {
   if (venue) {
     var n = Math.max(1, Math.min(200, Number(ad.tableCount) || 10));
     $('tbl-n').textContent = ar(n);
-    var vlink = 'https://radhwanmalaah-sudo.github.io/mousl-online/venue.html?c=' + encodeURIComponent(ad.ownerCode || '');
+    var vlink = 'https://radhwanmalaah-sudo.github.io/mousl-online/venue.html?a=' + encodeURIComponent(adId || '');
     $('venue-link-note').innerHTML = 'رابط الزبائن: <span dir="ltr" style="word-break:break-all">' + esc(vlink) + '</span>';
     window._venueLink = vlink;
     renderVenueQR();
@@ -677,16 +677,6 @@ function listenOrders(id) {
         var box = $('olist');
         if (box) box.innerHTML = '<div class="empty">ما كدرت أقرأ الطلبات: ' + esc((e && e.message) || 'صلاحيات') +
           '<br><span class="note">تأكد إنك دخلت بالكود الصحيح وأن الإنترنت شغال، ثم اخرج وادخل مرة ثانية.</span></div>';
-        // أعد المطالبة بالملكية وجرب مرة
-        ensureAuth().then(function (u) {
-          if (!u) return null;
-          return db.collection('ads').doc(id).update({ ownerUid: u.uid });
-        }).then(function () {
-          setTimeout(function () {
-            if (unsubOrders) { try { unsubOrders(); } catch (x) {} }
-            unsubOrders = db.collection('orders').where('adId', '==', id).limit(40).onSnapshot(apply, function () {});
-          }, 800);
-        }).catch(function () {});
       });
   }
   startListen();
@@ -702,21 +692,7 @@ function openApp(id, data) {
     ad = snap.data(); ad.id = id;
     renderAll();
   }, function (e) { $('lerr').textContent = e.message || 'خطأ'; });
-  // سجّل هذا الجهاز كمالك (بعد دخول الكود) ثم اسمع الطلبات
-  ensureAuth().then(function (u) {
-    if (!u) throw new Error('ما كدرت أسجّل الدخول');
-    return db.collection('ads').doc(id).update({ ownerUid: u.uid }).then(function () {
-      ad.ownerUid = u.uid;
-      return u;
-    });
-  }).then(function () {
-    listenOrders(id);
-  }).catch(function (e) {
-    var list = $('olist');
-    if (list) list.innerHTML = '<div class="empty">ما كدرت أفعّل استقبال الطلبات: ' + esc((e && e.message) || 'صلاحيات') + '<br><span class="note">جرّب تخرج وتدخل بالكود مرة ثانية.</span></div>';
-    // حاول تسمع على أي حال بعد ثانية (لو الحفظ تأخر)
-    setTimeout(function () { listenOrders(id); }, 1200);
-  });
+  listenOrders(id);
   renderAll();
   renderOrders();
 }
@@ -732,17 +708,23 @@ function logout(msg) {
 
 function loginWith(code) {
   var c = normCode(code);
-  if (c.length < 6) { $('lerr').textContent = 'اكتب الكود كامل.'; return; }
+  if (c.length !== 8) { $('lerr').textContent = 'اكتب الكود كامل، ثمان خانات.'; return; }
   $('lerr').textContent = '';
-  ensureAuth().then(function () {
-    return db.collection('ads').where('ownerCode', '==', c).limit(1).get();
-  }).then(function (snap) {
-    if (snap.empty) { $('lerr').textContent = 'الكود غلط أو ماكو إعلان مرتبط فيه.'; return; }
-    var doc = snap.docs[0];
-    try { localStorage.setItem('chaychi-shop-code', c); } catch (e) {}
-    openApp(doc.id, doc.data());
+  var aid;
+  ensureAuth().then(function (u) {
+    return db.collection('adCodes').doc(c).get().then(function (snap) {
+      if (!snap.exists) { $('lerr').textContent = 'الكود غلط. اسأل صاحب التطبيق.'; return null; }
+      aid = snap.data().aid;
+      return db.collection('adPrivate').doc(aid).update({ uid: u.uid, claimCode: c }).then(function () {
+        return db.collection('ads').doc(aid).get();
+      }).then(function (ds) {
+        if (!ds.exists) { $('lerr').textContent = 'الإعلان محذوف.'; return null; }
+        try { localStorage.setItem('chaychi-shop-code', c); } catch (e) {}
+        openApp(aid, ds.data());
+      });
+    });
   }).catch(function (e) {
-    $('lerr').textContent = (e && e.message) || 'تعذر الدخول. تأكد من الإنترنت.';
+    $('lerr').textContent = (e && e.code === 'permission-denied') ? 'الكود غلط أو ما عندك صلاحية.' : ((e && e.message) || 'تعذر الدخول. تأكد من الإنترنت.');
   });
 }
 
