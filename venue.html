@@ -377,7 +377,9 @@ document.addEventListener('click', function (e) {
   var params = new URLSearchParams(location.search);
   if (params.get('preview') === '1') {
     var bar = document.getElementById('preview-bar');
-    if (bar) bar.hidden = false;
+    if (bar && window === window.top) bar.hidden = false;
+    var sb = document.getElementById('btn-send');
+    if (sb) sb.addEventListener('click', function (e) { e.stopImmediatePropagation(); e.preventDefault(); $('err').textContent = 'معاينة فقط — ما ينرسل طلب.'; }, true);
     var btn = document.getElementById('btn-back');
     if (btn) btn.addEventListener('click', function () {
       if (window.opener) { window.close(); }

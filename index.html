@@ -560,6 +560,8 @@ try { var savedZone = localStorage.getItem('chaychi-zone2'); if (savedZone) zone
 
 var sellers = [], ads = [], myLoc = null, adOpenId = '', adSeen = {}, adClicked = {};
 var pendingAdId = '';
+var PVIEW = /[?&]pv=1/.test(location.search);
+if (PVIEW) document.addEventListener('click', function (e) { var t = e.target.closest('[data-act="ad-send"],[data-act="send"]'); if (t) { e.stopPropagation(); e.preventDefault(); } }, true);
 try {
   pendingAdId = new URLSearchParams(location.search).get('ad') || '';
 } catch (e) {}
@@ -655,7 +657,7 @@ function renderAd() {
   var body = list.length ? '<div style="display:grid;gap:10px">' + list.map(function (a) {
     if (!adSeen[a.id]) {
       adSeen[a.id] = 1;
-      db.collection('ads').doc(a.id).update({ views: FV.increment(1) }).catch(function () {});
+      if (!PVIEW) db.collection('ads').doc(a.id).update({ views: FV.increment(1) }).catch(function () {});
     }
     var open = adOpenId === a.id, ph = normPhone(a.phone) || String(a.phone || '');
     var nItems = (a.items || []).length;
@@ -739,7 +741,7 @@ function sharePage() {
 function openAd(id) {
   if (adOpenId !== id) adCart = {};
   adOpenId = adOpenId === id ? '' : id;
-  if (adOpenId && !adClicked[id]) { adClicked[id] = 1; db.collection('ads').doc(id).update({ clicks: FV.increment(1) }).catch(function () {}); }
+  if (adOpenId && !adClicked[id] && !PVIEW) { adClicked[id] = 1; db.collection('ads').doc(id).update({ clicks: FV.increment(1) }).catch(function () {}); }
   renderAd();
 }
 function sendAdOrder(adId) {

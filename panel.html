@@ -259,6 +259,17 @@ textarea.in { resize: vertical; min-height: 64px; }
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<div id="pvov" hidden style="position:fixed;inset:0;z-index:80;background:var(--bg);display:flex;flex-direction:column">
+  <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);background:var(--surface)">
+    <b id="pvtitle" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></b>
+    <a id="pvopen" class="btn-line" target="_blank" rel="noopener" style="text-decoration:none">فتح بتبويب</a>
+    <button class="btn-line" data-act="pvclose" type="button">إغلاق</button>
+  </div>
+  <div id="pvtabs" style="display:flex;gap:6px;padding:8px 12px;flex-wrap:wrap;border-bottom:1px solid var(--line)"></div>
+  <div style="flex:1;display:flex;justify-content:center;background:var(--surface-2,#ddd);min-height:0">
+    <iframe id="pvframe" title="معاينة" style="width:100%;max-width:480px;height:100%;border:0;background:#fff"></iframe>
+  </div>
+</div>
 <script>
 var FBCONFIG = { apiKey: 'AIzaSyDT27G2lUpfUPcAMvRIPkllY3bzbQv87Eg', authDomain: 'chaychi-61eaf.firebaseapp.com', projectId: 'chaychi-61eaf', storageBucket: 'chaychi-61eaf.firebasestorage.app', messagingSenderId: '669532553284', appId: '1:669532553284:web:b999af1fc4824c7affbc11' };
 var ZONES_DEFAULT = []; /* ما نثبت مناطق افتراضية — تضيفها من اللوحة */
@@ -472,6 +483,36 @@ function debtsInviteText(a) {
   return 'أهلاً ' + a.shop + '،\nصفحة متابعة الديون:\n' + DEBTS_LINK + '?c=' + encodeURIComponent(a.ownerCode || '') + '\nكود الدخول: ' + a.ownerCode + '\nافتح الرابط وادخل الكود حتى تسجّل ديون زبائنك وتسديداتهم.';
 }
 
+
+var PVBASE = 'https://radhwanmalaah-sudo.github.io/mousl-online/';
+function pvViews(a) {
+  var v = [];
+  if (a.pageType === 'venue') {
+    v.push({ t: 'صفحة الزبائن', u: 'venue.html?a=' + a.id + '&preview=1' });
+    v.push({ t: 'إدارة الصالة', u: 'shop.html?pv=' + a.id });
+  } else if (a.pageType === 'debts') {
+    v.push({ t: 'دفتر الديون', u: 'debts.html?pv=' + a.id });
+  } else {
+    v.push({ t: 'الزبون يشوف', u: 'index.html?pv=1&ad=' + a.id });
+    v.push({ t: 'صفحة المحل (المعلن)', u: 'shop.html?pv=' + a.id });
+    if (a.debtsEnabled) v.push({ t: 'دفتر الديون', u: 'debts.html?pv=' + a.id });
+  }
+  return v;
+}
+var pvCur = null, pvIdx = 0;
+function pvShow(i) {
+  if (!pvCur) return;
+  var v = pvViews(pvCur); pvIdx = i;
+  $('pvframe').src = PVBASE + v[i].u;
+  $('pvopen').href = PVBASE + v[i].u;
+  $('pvtabs').innerHTML = v.map(function (x, k) { return '<button type="button" class="btn-line" data-act="pvtab" data-i="' + k + '"' + (k === i ? ' style="border-color:var(--tea);color:var(--tea);font-weight:700"' : '') + '>' + esc(x.t) + '</button>'; }).join('');
+}
+function openPreview(id) {
+  var a = ads.filter(function (x) { return x.id === id; })[0]; if (!a) return;
+  pvCur = a; $('pvtitle').textContent = 'معاينة: ' + (a.shop || ''); $('pvov').hidden = false; document.body.style.overflow = 'hidden';
+  pvShow(0);
+}
+function closePreview() { $('pvov').hidden = true; $('pvframe').src = 'about:blank'; document.body.style.overflow = ''; pvCur = null; }
 function legacyAds() { return ads.filter(function (a) { return a._legacy || !adPriv[a.id]; }); }
 function secureLegacy() {
   var L = legacyAds();
@@ -514,7 +555,7 @@ function renderList() {
       '<div class="meta"><span class="pill">' + ptl + '</span><span>' + esc(adZones(a)) + '</span><span>' + dshow(a.start) + ' إلى ' + dshow(a.end) + '</span><span class="ltr">' + esc(a.phone) + '</span></div>' +
       (a.ownerCode ? '<div class="meta"><span>كود المعلن: <b dir="ltr">' + esc(a.ownerCode) + '</b></span><span>' + ar((a.items || []).length) + ' عرض</span></div>' : '') +
       '<div class="nums"><div>ظهر<b>' + ar(a.views || 0) + '</b></div><div>ضغطوا<b>' + ar(a.clicks || 0) + '</b></div><div>نسبة الضغط<b>' + ctr(a) + '</b></div></div>' +
-      '<div class="btns"><button class="btn-line" data-act="editad" data-id="' + a.id + '">عدّل</button>' +
+      '<div class="btns"><button class="btn-line" data-act="preview" data-id="' + a.id + '">معاينة</button><button class="btn-line" data-act="editad" data-id="' + a.id + '">عدّل</button>' +
       '<button class="btn-line" data-act="toggle" data-id="' + a.id + '">' + (a.active === false ? 'شغّل' : 'وقّف') + '</button>' +
       (a.ownerCode ? '<button class="btn-line" data-act="adinvite" data-id="' + a.id + '">رابط المعلن</button>' : '') +
       (a.ownerCode ? '<button class="btn-line" data-act="debts" data-id="' + a.id + '">' + (a.debtsEnabled ? 'رابط الديون' : 'تفعيل الديون') + '</button>' : '') +
@@ -744,6 +785,9 @@ document.addEventListener('click', function (e) {
     db2.commit().catch(fail); confirmId = ''; editAdId = '';
   }
   else if (a === 'secure') { secureLegacy(); return; }
+  else if (a === 'preview') { openPreview(id); return; }
+  else if (a === 'pvclose') { closePreview(); return; }
+  else if (a === 'pvtab') { pvShow(Number(t.dataset.i)); return; }
   else if (a === 'editad') { var ea = ads.filter(function (x) { return x.id === id; })[0]; if (ea) fillAdForm(ea); return; }
   else if (a === 'adinvite') { var ia = ads.filter(function (x) { return x.id === id; })[0]; if (ia) { lastAdInvite = ia; renderList(); window.scrollTo(0, 0); } return; }
   else if (a === 'debts') {
