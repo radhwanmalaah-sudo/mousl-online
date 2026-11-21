@@ -261,9 +261,9 @@ textarea.in { resize: vertical; min-height: 64px; }
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <div id="pvov" hidden style="position:fixed;inset:0;z-index:80;background:var(--bg);display:flex;flex-direction:column">
   <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);background:var(--surface)">
+    <button class="btn" data-act="pvclose" type="button" style="width:auto;padding:8px 16px">خروج من المعاينة</button>
     <b id="pvtitle" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></b>
-    <a id="pvopen" class="btn-line" target="_blank" rel="noopener" style="text-decoration:none">فتح بتبويب</a>
-    <button class="btn-line" data-act="pvclose" type="button">إغلاق</button>
+    <a id="pvopen" class="btn-line" target="_blank" rel="noopener" style="text-decoration:none">تبويب</a>
   </div>
   <div id="pvtabs" style="display:flex;gap:6px;padding:8px 12px;flex-wrap:wrap;border-bottom:1px solid var(--line)"></div>
   <div style="flex:1;display:flex;justify-content:center;background:var(--surface-2,#ddd);min-height:0">
@@ -512,6 +512,8 @@ function openPreview(id) {
   pvCur = a; $('pvtitle').textContent = 'معاينة: ' + (a.shop || ''); $('pvov').hidden = false; document.body.style.overflow = 'hidden';
   pvShow(0);
 }
+window.addEventListener('message', function (e) { if (e.origin === location.origin && e.data === 'pv-close') closePreview(); });
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && $('pvov') && !$('pvov').hidden) closePreview(); });
 function closePreview() { $('pvov').hidden = true; $('pvframe').src = 'about:blank'; document.body.style.overflow = ''; pvCur = null; }
 function legacyAds() { return ads.filter(function (a) { return a._legacy || !adPriv[a.id]; }); }
 function secureLegacy() {

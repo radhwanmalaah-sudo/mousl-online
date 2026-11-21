@@ -383,7 +383,7 @@ document.addEventListener('click', function (e) {
     var btn = document.getElementById('btn-back');
     if (btn) btn.addEventListener('click', function () {
       if (window.opener) { window.close(); }
-      else { history.back(); }
+      else { location.href = 'panel.html'; }
     });
   }
 })();

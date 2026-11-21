@@ -561,6 +561,19 @@ try { var savedZone = localStorage.getItem('chaychi-zone2'); if (savedZone) zone
 var sellers = [], ads = [], myLoc = null, adOpenId = '', adSeen = {}, adClicked = {};
 var pendingAdId = '';
 var PVIEW = /[?&]pv=1/.test(location.search);
+if (PVIEW) window.addEventListener('DOMContentLoaded', function () {
+  var b = document.createElement('div');
+  b.style.cssText = 'position:sticky;top:0;z-index:99;background:#222;color:#fff;text-align:center;padding:6px;font-size:13px';
+  b.innerHTML = '<span>وضع المعاينة</span> ';
+  var x = document.createElement('button'); x.type = 'button'; x.textContent = 'خروج من المعاينة';
+  x.style.cssText = 'margin-inline-start:10px;background:#fff;color:#222;border:0;border-radius:999px;padding:3px 12px;font-weight:600';
+  x.onclick = function () {
+    try { if (window.parent !== window) { window.parent.postMessage('pv-close', '*'); return; } } catch (e) {}
+    if (window.opener) { try { window.close(); return; } catch (e) {} }
+    location.href = 'panel.html';
+  };
+  b.appendChild(x); document.body.insertBefore(b, document.body.firstChild);
+});
 if (PVIEW) document.addEventListener('click', function (e) { var t = e.target.closest('[data-act="ad-send"],[data-act="send"]'); if (t) { e.stopPropagation(); e.preventDefault(); } }, true);
 try {
   pendingAdId = new URLSearchParams(location.search).get('ad') || '';
