@@ -682,6 +682,16 @@ function pvLoad() {
   }
   if ($('ddate') && !$('ddate').value) $('ddate').value = dayKey();
 })();
+
+/* exit to links page */
+(function () {
+  if (window.top !== window) return;
+  Array.prototype.slice.call(document.querySelectorAll('.brand')).forEach(function (b) {
+    var a = document.createElement('a'); a.href = 'links.html'; a.textContent = 'خروج للروابط ↩'; a.className = 'homelink';
+    a.style.cssText = 'display:inline-block;margin:6px 8px 0;padding:4px 12px;border:1px solid currentColor;border-radius:999px;font-size:12px;text-decoration:none;color:inherit;opacity:.85;white-space:nowrap';
+    b.insertAdjacentElement('afterend', a);
+  });
+})();
 </script>
 </body>
 </html>

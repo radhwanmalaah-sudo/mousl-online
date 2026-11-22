@@ -245,6 +245,7 @@ label.f { display: block; font-weight: 600; font-size: 14px; margin-bottom: 6px;
     </label>
     <button class="snd" id="snd" data-act="snd" aria-pressed="true" aria-label="الصوت شغال"></button>
     <button class="btn-line" data-act="share-page" style="padding:6px 12px;font-size:13px;margin-inline-start:6px" title="شارك الصفحة">شارك ↗</button>
+    <button class="btn-line" data-act="exit-home" style="padding:6px 12px;font-size:13px;margin-inline-start:6px" title="الخروج لصفحة الروابط">خروج</button>
   </header>
   <div class="fberr" id="fberr" hidden role="alert"></div>
 
@@ -1112,6 +1113,7 @@ document.addEventListener('click', function (e) {
     sendAdOrder(id);
     return;
   } else if (a === 'share-page') { sharePage(); return; }
+  else if (a === 'exit-home') { location.href = 'links.html'; return; }
   else if (a === 'ad-share') {
     e.preventDefault();
     e.stopPropagation();
