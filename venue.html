@@ -27,11 +27,48 @@
   background: #fff; color: var(--tea); border: 0; border-radius: 10px;
   padding: 6px 14px; font-weight: 600; cursor: pointer;
 }
-body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.55;
-  padding: 0 max(14px, env(safe-area-inset-right)) 100px max(14px, env(safe-area-inset-left)); }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.55; padding: 0 0 110px; overflow-x: hidden; }
 button, input, select { font: inherit; color: inherit; }
 button { cursor: pointer; }
-.app { max-width: 520px; margin-inline: auto; }
+.app { max-width: 480px; margin-inline: auto; padding: 0 max(14px, env(safe-area-inset-right)) 0 max(14px, env(safe-area-inset-left)); min-height: 100vh; background: var(--bg); }
+@media (min-width: 700px) {
+  body { background: var(--surface-2); }
+  .app { box-shadow: 0 0 40px rgba(0,0,0,.12); }
+}
+.cover { margin: 0 -14px; aspect-ratio: 16 / 5; background: linear-gradient(135deg, var(--tea), #5b1a0d); background-size: cover; background-position: center; }
+.hinfo { display: flex; align-items: flex-start; gap: 12px; position: relative; }
+.logo { flex: 0 0 auto; margin-top: -34px; width: 68px; height: 68px; border-radius: 50%; border: 3px solid var(--bg); background: var(--tea); overflow: hidden; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 30px; font-weight: 700; box-shadow: 0 2px 8px rgba(0,0,0,.18); }
+.logo img { width: 100%; height: 100%; object-fit: cover; }
+.htxt { min-width: 0; margin-top: 8px; }
+.htxt .brand { margin: 0; font-size: 28px; line-height: 1.15; }
+.meta2 { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 4px; font-size: 13px; color: var(--ink-2); }
+.status { display: inline-flex; align-items: center; gap: 5px; border-radius: 999px; padding: 2px 10px; font-size: 12px; font-weight: 600; background: #DDF1EC; color: #0E6B5F; }
+.status::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.status.off { background: #F6DEDA; color: #A6311A; }
+.steps { display: flex; gap: 6px; list-style: none; padding: 0; margin: 12px 0 12px; font-size: 12px; }
+.steps li { flex: 1; text-align: center; padding: 6px 4px; border-radius: 10px; background: var(--surface-2); color: var(--ink-2); }
+.steps li.on { background: var(--tea); color: var(--tea-ink); font-weight: 600; }
+.steps li.done { background: #DDF1EC; color: #0E6B5F; }
+.tgrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.tbtn { aspect-ratio: 1 / 1; border: 1px solid var(--line); background: var(--surface); border-radius: 14px; font-size: 20px; font-weight: 700; color: var(--ok); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; padding: 0; }
+.tbtn small { font-size: 10px; font-weight: 500; color: var(--ink-2); }
+.tbtn:active { transform: scale(.96); }
+.tbtn.last { border-color: var(--tea); box-shadow: 0 0 0 2px var(--tea) inset; }
+.tbtn:disabled { background: var(--surface-2); color: var(--ink-2); opacity: .7; cursor: not-allowed; }
+.callrow { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 4px 0 8px; }
+.callrow .btn-line { padding: 9px 8px; font-size: 14px; }
+.trk { overflow: hidden; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; margin-bottom: 8px; }
+.trk .tl { font-size: 13px; color: var(--ink-2); margin-bottom: 8px; }
+.prog { display: flex; align-items: center; }
+.prog span { flex: 1; text-align: center; font-size: 11px; color: var(--ink-2); position: relative; padding-top: 16px; }
+.prog span::before { content: ''; position: absolute; top: 3px; left: 50%; transform: translateX(-50%); width: 10px; height: 10px; border-radius: 50%; background: var(--line); z-index: 1; }
+.prog span::after { content: ''; position: absolute; top: 7px; right: 50%; width: 100%; height: 2px; background: var(--line); }
+.prog span:first-child::after { display: none; }
+.prog span.on { color: var(--ink); font-weight: 600; }
+.prog span.on::before { background: var(--ok); }
+.prog span.on::after { background: var(--ok); }
+.trk.bad { border-color: #E5B7AE; }
+
 .brand { font-family: var(--font-display); font-size: 30px; color: var(--tea); margin: 16px 0 4px; }
 .sub { color: var(--ink-2); font-size: 14px; margin-bottom: 14px; }
 h2 { font-size: 13px; font-weight: 600; color: var(--ink-2); margin: 18px 0 8px; }
@@ -90,24 +127,39 @@ h2 { font-size: 13px; font-weight: 600; color: var(--ink-2); margin: 18px 0 8px;
   <button type="button" id="btn-back">رجوع للإعدادات</button>
 </div>
 <div class="app">
-  <div class="brand" id="vname">الصالة</div>
-  <div class="sub" id="vsub">جاري التحميل...</div>
-
-  <div id="gate-table">
-    <h2>رقم طاولتك</h2>
-    <div class="card">
-      <label class="meta" for="table">اختار الطاولة</label>
-      <select class="in" id="table" style="margin-top:6px"></select>
-      <p class="note" style="margin:8px 0 0">الطلب يبقى مفتوح على هذي الطاولة حتى ينهيه موظفو الصالة.</p>
-      <button class="btn" id="btn-table" style="margin-top:12px">متابعة للقائمة</button>
+  <header>
+    <div class="cover" id="cover"></div>
+    <div class="hinfo">
+      <div class="logo" id="logo">م</div>
+      <div class="htxt">
+        <h1 class="brand" id="vname">الصالة</h1>
+        <div class="meta2"><span class="status" id="vstat" hidden>مفتوح الآن</span><span id="vhours"></span></div>
+      </div>
     </div>
+    <div class="sub" id="vsub" style="margin-top:10px">جاري التحميل...</div>
+  </header>
+  <ol class="steps" id="steps" hidden>
+    <li id="st1" class="on">١ اختار طاولتك</li><li id="st2">٢ اطلب</li><li id="st3">٣ استلم</li>
+  </ol>
+
+  <div id="gate-table" hidden>
+    <h2>اختار رقم طاولتك</h2>
+    <div class="tgrid" id="tgrid"></div>
+    <p class="note" id="tbl-busy-hint" hidden></p>
+    <p class="note">الرمادي = طاولة مشغولة. بعد ما تضغط على رقمك تنفتح القائمة مباشرة.</p>
   </div>
 
   <div id="menu" hidden>
-    <div class="row" style="margin-bottom:8px">
+    <div class="row" style="margin:12px 0 8px">
       <span class="pill" id="tbl-pill">طاولة</span>
       <button class="btn-line" type="button" id="btn-change-tbl">غيّر الطاولة</button>
     </div>
+    <div id="track"></div>
+    <div class="callrow">
+      <button class="btn-line" type="button" data-act="call" data-t="waiter">🔔 نادي الويتر</button>
+      <button class="btn-line" type="button" data-act="call" data-t="bill">🧾 اطلب الحساب</button>
+    </div>
+    <p class="note" id="callmsg" role="status" style="margin:0 0 8px" hidden></p>
     <input class="in srch" id="q" type="search" placeholder="ابحث بالقائمة..." autocomplete="off">
     <div class="cats" id="cats"></div>
     <div class="grid" id="list"></div>
@@ -118,9 +170,15 @@ h2 { font-size: 13px; font-weight: 600; color: var(--ink-2); margin: 18px 0 8px;
     <div class="card" style="text-align:center">
       <div class="brand" style="font-size:24px">تم إرسال الطلب</div>
       <p class="note">طلبك وصل للصالة على الطاولة <b id="done-tbl"></b>.</p>
-      <p class="note">تقدر تضيف طلب ثاني لنفس الطاولة قبل ما ينهون الحساب.</p>
+      <p class="note">نجيبه لك للطاولة. تقدر تتابع حالته هنا.</p>
       <button class="btn" id="btn-more" style="margin-top:10px">أضف طلب ثاني</button>
     </div>
+    <div id="done-track" style="margin-top:10px"></div>
+    <div class="callrow">
+      <button class="btn-line" type="button" data-act="call" data-t="waiter">🔔 نادي الويتر</button>
+      <button class="btn-line" type="button" data-act="call" data-t="bill">🧾 اطلب الحساب</button>
+    </div>
+    <p class="note" id="callmsg2" role="status" hidden></p>
   </div>
 </div>
 
@@ -214,37 +272,49 @@ function busySet() {
   b.forEach(function (n) { s[Number(n)] = 1; });
   return s;
 }
+var IS_PREVIEW = /[?&]preview=1/.test(location.search);
+function isClosed() { return !!ad && (ad.acceptOrders === false); }
+function safeUrl(u) { return /^(data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/=]+|https:\/\/[^\s"'<>]+)$/.test(String(u || '')) ? u : ''; }
+function renderHero() {
+  if (!ad) return;
+  var nm = String(ad.shop || 'الصالة');
+  $('vname').textContent = nm;
+  var cv = safeUrl(ad.cover);
+  $('cover').style.backgroundImage = cv ? 'url("' + cv + '")' : '';
+  var lg = safeUrl(ad.logo);
+  var L = $('logo');
+  if (lg) { L.innerHTML = '<img alt="" src="' + esc(lg) + '">'; L.style.background = ''; }
+  else { L.textContent = nm.charAt(0); L.style.background = 'hsl(' + hueOf(nm) + ',42%,40%)'; }
+  var st = $('vstat'), closed = isClosed();
+  st.hidden = false; st.textContent = closed ? 'مغلق حالياً' : 'مفتوح الآن'; st.className = 'status' + (closed ? ' off' : '');
+  $('vhours').textContent = ad.hours ? 'الدوام: ' + ad.hours : '';
+  $('vsub').textContent = closed ? 'الصالة ما تستقبل طلبات حالياً.' : (ad.text || 'اطلب من مكانك، ونجيبه لطاولتك');
+  document.title = nm + ' — قائمة';
+}
+function setStep(n) {
+  $('steps').hidden = false;
+  ['st1', 'st2', 'st3'].forEach(function (id, k) { $(id).className = (k + 1 < n) ? 'done' : (k + 1 === n ? 'on' : ''); });
+}
 function renderTables() {
   var n = Math.max(1, Math.min(200, Number(ad.tableCount) || 10));
-  var sel = $('table');
-  var busy = busySet();
-  var html = '';
-  var firstFree = 0;
+  var busy = busySet(), html = '', free = 0, kept = 0;
+  try { kept = Number(localStorage.getItem('chaychi-venue-tbl-' + adId)) || 0; } catch (e) {}
+  if (isClosed()) { $('tgrid').innerHTML = ''; var h0 = $('tbl-busy-hint'); h0.hidden = true; return; }
   for (var i = 1; i <= n; i++) {
-    if (busy[i]) {
-      html += '<option value="' + i + '" disabled>طاولة ' + ar(i) + ' — مشغولة</option>';
-    } else {
-      if (!firstFree) firstFree = i;
-      html += '<option value="' + i + '">طاولة ' + ar(i) + '</option>';
-    }
+    if (busy[i]) html += '<button type="button" class="tbtn" disabled aria-label="طاولة ' + i + ' مشغولة">' + ar(i) + '<small>مشغولة</small></button>';
+    else { free++; html += '<button type="button" class="tbtn' + (kept === i ? ' last' : '') + '" data-act="tbl" data-n="' + i + '">' + ar(i) + (kept === i ? '<small>طاولتك</small>' : '') + '</button>'; }
   }
-  if (!firstFree) {
-    html = '<option value="">كل الطاولات مشغولة حالياً</option>' + html;
-  }
-  sel.innerHTML = html;
-  try {
-    var kept = localStorage.getItem('chaychi-venue-tbl-' + adId);
-    if (kept && Number(kept) <= n && !busy[Number(kept)]) sel.value = kept;
-    else if (firstFree) sel.value = String(firstFree);
-  } catch (e) {
-    if (firstFree) sel.value = String(firstFree);
-  }
-  var hint = $('tbl-busy-hint');
-  if (hint) {
-    var nb = Object.keys(busy).length;
-    hint.textContent = nb ? (ar(nb) + ' طاولة مشغولة الآن — المظلّلة غير متاحة.') : '';
-    hint.hidden = !nb;
-  }
+  $('tgrid').innerHTML = html;
+  var hint = $('tbl-busy-hint'), nb = Object.keys(busy).length;
+  hint.textContent = !free ? 'كل الطاولات مشغولة حالياً. حاول بعد قليل.' : (nb ? ar(nb) + ' طاولة مشغولة الآن.' : '');
+  hint.hidden = !hint.textContent;
+}
+function pickTable(n) {
+  if (isClosed()) return;
+  if (busySet()[n]) { $('vsub').textContent = 'طاولة ' + ar(n) + ' مشغولة. اختار طاولة ثانية.'; renderTables(); return; }
+  tableNo = n;
+  try { localStorage.setItem('chaychi-venue-tbl-' + adId, String(n)); } catch (e) {}
+  cart = {}; showMenu();
 }
 
 var curCat = '', searchQ = '';
@@ -314,83 +384,115 @@ function updateBar() {
   $('total').textContent = cur === 'none' ? (n ? 'طلبك جاهز' : 'السلة فاضية') : 'المجموع: ' + money(cartTotal(), cur);
   $('barcnt').textContent = n ? ar(n) + ' ' + (n === 1 ? 'صنف' : 'أصناف') + ' · اضغط لمراجعة الطلب' : 'اختار من القائمة';
   $('btn-send').disabled = !n || !tableNo;
-  $('bar').hidden = !tableNo;
+  $('bar').hidden = !tableNo || $('menu').hidden;
 }
 
 function showMenu() {
   $('gate-table').hidden = true;
   $('menu').hidden = false;
   $('done').hidden = true;
-  $('tbl-pill').textContent = 'طاولة ' + ar(tableNo);
+  $('tbl-pill').textContent = 'أهلاً بك — طاولة ' + ar(tableNo);
+  setStep(2);
   renderMenu();
+  renderTrack();
   updateBar();
 }
 
 function loadVenue(id) {
   if (!/^[A-Za-z0-9]{6,40}$/.test(id || '')) { $('vsub').textContent = 'الرابط غير صحيح.'; return; }
-  ensureAuth().then(function () {
+  ensureAuth().then(function (u) {
+    myUid = u.uid;
     return db.collection('ads').doc(id).get();
   }).then(function (doc) {
     if (!doc.exists) { $('vsub').textContent = 'ماكو صالة مرتبطة بهذا الرابط.'; return; }
     ad = doc.data(); adId = doc.id;
     if (ad.pageType !== 'venue') { $('vsub').textContent = 'هذا الرابط مو مخصص لصالة.'; return; }
     if (ad.active === false) { $('vsub').textContent = 'الصالة متوقفة حالياً.'; return; }
-    document.title = (ad.shop || 'الصالة') + ' — قائمة';
-    $('vname').textContent = ad.shop || 'الصالة';
-    $('vsub').textContent = ad.text || 'اختار طاولتك واطلب من القائمة';
+    renderHero();
+    $('gate-table').hidden = false; setStep(1);
     renderTables();
-    // تحديث مباشر لحالة الطاولات المشغولة
+    startTrack();
     if (window._unsubAd) { try { window._unsubAd(); } catch (e) {} }
     window._unsubAd = db.collection('ads').doc(adId).onSnapshot(function (snap) {
       if (!snap.exists) return;
       ad = snap.data(); ad.id = adId;
-      if (!tableNo) renderTables();
-      else if (busySet()[tableNo] && !$('menu').hidden) {
-        // الطاولة انشغلت من طلب ثاني — نترك الزبون يكمل طلبه على نفس الطاولة
-      } else if (!tableNo) {
-        renderTables();
-      } else {
-        renderTables();
-      }
+      renderHero();
+      if (!tableNo) renderTables(); else renderMenu();
+      updateBar();
     });
     // QR طاولة: ?t=5 أو ?table=5
     var tp = 0;
-    try {
-      var usp = new URLSearchParams(location.search);
-      tp = Number(usp.get('t') || usp.get('table') || 0) || 0;
-    } catch (e) {}
+    try { var usp = new URLSearchParams(location.search); tp = Number(usp.get('t') || usp.get('table') || 0) || 0; } catch (e) {}
     var maxT = Math.max(1, Math.min(200, Number(ad.tableCount) || 10));
-    if (tp >= 1 && tp <= maxT) {
-      if (busySet()[tp]) {
-        $('vsub').textContent = 'طاولة ' + ar(tp) + ' مشغولة حالياً. اختار طاولة ثانية من القائمة.';
-        try { $('table').value = ''; } catch (e) {}
-      } else {
-        tableNo = tp;
-        try { localStorage.setItem('chaychi-venue-tbl-' + adId, String(tableNo)); } catch (e) {}
-        showMenu();
-      }
+    if (tp >= 1 && tp <= maxT && !isClosed()) {
+      if (busySet()[tp]) $('vsub').textContent = 'طاولة ' + ar(tp) + ' مشغولة حالياً. اختار طاولة ثانية.';
+      else pickTable(tp);
     }
   }).catch(function (e) {
     $('vsub').textContent = 'تعذر التحميل. تأكد من الإنترنت.';
   });
 }
 
-$('btn-table').addEventListener('click', function () {
-  tableNo = Number($('table').value) || 0;
-  if (!tableNo) { $('vsub').textContent = 'ماكو طاولة فاضية حالياً. حاول بعد قليل.'; return; }
-  if (busySet()[tableNo]) {
-    $('vsub').textContent = 'طاولة ' + ar(tableNo) + ' مشغولة. اختار طاولة ثانية.';
-    renderTables();
-    return;
-  }
-  try { localStorage.setItem('chaychi-venue-tbl-' + adId, String(tableNo)); } catch (e) {}
-  cart = {};
-  showMenu();
-});
+/* ---- tracking my orders ---- */
+var myUid = '', myOrders = [], trackUnsub = null, lastStages = {};
+var STAGES = ['تم الاستلام', 'قيد التحضير', 'جاهز', 'تم'];
+function stageOf(st) { return { 'new': 0, open: 0, accepted: 1, ready: 2, delivered: 3, closed: 3 }[st]; }
+function startTrack() {
+  if (trackUnsub || !myUid || !adId) return;
+  trackUnsub = db.collection('orders').where('customerUid', '==', myUid).where('adId', '==', adId).limit(20).onSnapshot(function (s) {
+    var cut = Date.now() - 12 * 3600 * 1000;
+    myOrders = s.docs.map(function (d) { var x = d.data(); x.id = d.id; return x; })
+      .filter(function (o) { return o.kind === 'venue' && (o.createdAt || 0) > cut; })
+      .sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
+    myOrders.forEach(function (o) {
+      var sg = stageOf(o.status);
+      if (lastStages[o.id] != null && sg === 2 && lastStages[o.id] !== 2) { try { if (navigator.vibrate) navigator.vibrate([200, 100, 200]); } catch (e) {} }
+      lastStages[o.id] = sg;
+    });
+    renderTrack();
+  }, function () {});
+}
+function trackHtml() {
+  var cur = (ad && ad.currency) || 'iqd';
+  var list = myOrders.filter(function (o) { return o.open !== false || o.status === 'delivered' || o.status === 'rejected' || o.status === 'cancelled'; }).slice(0, 3);
+  if (!list.length) return '';
+  return list.map(function (o) {
+    var lines = (o.lines || []).map(function (l) { return esc(l.n) + ' × ' + ar(l.q); }).join(' · ');
+    if (o.status === 'rejected' || o.status === 'cancelled') return '<div class="trk bad"><div class="tl">' + lines + '</div><b>تم إلغاء الطلب</b></div>';
+    var sg = stageOf(o.status); if (sg == null) sg = 0;
+    return '<div class="trk"><div class="tl">طاولة ' + ar(o.tableNo || '') + ' · ' + lines + '</div><div class="prog">' +
+      STAGES.map(function (t, k) { return '<span' + (k <= sg ? ' class="on"' : '') + '>' + t + '</span>'; }).join('') + '</div></div>';
+  }).join('');
+}
+function renderTrack() {
+  var h = trackHtml();
+  if ($('track')) $('track').innerHTML = h;
+  if ($('done-track')) $('done-track').innerHTML = h;
+}
+
+/* ---- call waiter / bill ---- */
+function callStaff(type, msgEl) {
+  var say = function (t) { msgEl.textContent = t; msgEl.hidden = false; clearTimeout(say._t); say._t = setTimeout(function () { msgEl.hidden = true; }, 4000); };
+  if (IS_PREVIEW) { say('معاينة فقط — ما ينرسل نداء.'); return; }
+  if (!adId || !tableNo) return;
+  var key = 'mosl-call-' + adId + '-' + type, now = Date.now(), last = 0;
+  try { last = Number(localStorage.getItem(key)) || 0; } catch (e) {}
+  if (now - last < 120000) { say('نداؤك وصل، انتظر لحظات.'); return; }
+  ensureAuth().then(function (u) {
+    return db.collection('calls').doc(adId + '_' + tableNo + '_' + type).set({ adId: adId, tableNo: tableNo, type: type, open: true, createdAt: now, customerUid: u.uid });
+  }).then(function () {
+    try { localStorage.setItem(key, String(now)); } catch (e) {}
+    say(type === 'bill' ? 'وصل طلب الحساب للموظف.' : 'وصل ندائك للموظف.');
+  }).catch(function (e) {
+    if (e && e.code === 'permission-denied') { try { localStorage.setItem(key, String(now)); } catch (x) {} say('نداؤك وصل وبانتظار الموظف.'); }
+    else say('ما وصل النداء. تأكد من الإنترنت.');
+  });
+}
 
 $('btn-change-tbl').addEventListener('click', function () {
   tableNo = 0; cart = {};
-  $('menu').hidden = true; $('done').hidden = true; $('gate-table').hidden = false; $('bar').hidden = true;
+  $('menu').hidden = true; $('done').hidden = true; $('gate-table').hidden = false; $('bar').hidden = true; $('sheet').hidden = true;
+  setStep(1); renderTables();
 });
 
 $('btn-more').addEventListener('click', function () {
@@ -426,6 +528,7 @@ $('btn-send').addEventListener('click', function () {
     cart = {}; $('sheet').hidden = true;
     $('menu').hidden = true; $('bar').hidden = true; $('done').hidden = false;
     $('done-tbl').textContent = ar(tableNo);
+    setStep(3); renderTrack();
     $('btn-send').disabled = false;
   }).catch(function (e) {
     $('btn-send').disabled = false;
@@ -443,6 +546,8 @@ document.addEventListener('click', function (e) {
   if (a === 'inc') { cart[i] = Math.min((cart[i] || 0) + 1, 99); refreshAll(); }
   else if (a === 'dec') { cart[i] = Math.max((cart[i] || 0) - 1, 0); refreshAll(); }
   else if (a === 'cat') { curCat = t.dataset.c || ''; renderMenu(); }
+  else if (a === 'tbl') { pickTable(Number(t.dataset.n)); }
+  else if (a === 'call') { callStaff(t.dataset.t, !$('done').hidden ? $('callmsg2') : $('callmsg')); }
   else if (a === 'cart-open') { if (cartCount()) { renderSheet(); $('sheet').hidden = false; } }
   else if (a === 'cart-close') { $('sheet').hidden = true; }
 });
