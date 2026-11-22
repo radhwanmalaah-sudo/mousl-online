@@ -134,6 +134,7 @@ form.g { background: var(--surface); border: 1px solid var(--line); border-radiu
         <button class="btn-line" type="button" data-act="snd" id="snd-btn" title="الصوت">🔔 صوت الطلبات: شغّال</button>
         <button class="btn-line" data-act="logout">خروج</button>
       </div>
+      <div id="push-slot"></div>
       <p class="note" id="sndhint" hidden>اضغط أي مكان مرة حتى يتفعّل الصوت على الموبايل.</p>
       <div class="instbox" id="instbox">
         <button type="button" class="btn" data-act="install" style="width:100%;margin-top:8px">ثبّت الصفحة على الشاشة الرئيسية</button>
@@ -262,6 +263,8 @@ form.g { background: var(--surface); border: 1px solid var(--line); border-radiu
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js"></script>
+<script src="push.js"></script>
 <script src="qrcode.min.js"></script>
 <script>
 var FBCONFIG = { apiKey: 'AIzaSyDT27G2lUpfUPcAMvRIPkllY3bzbQv87Eg', authDomain: 'chaychi-61eaf.firebaseapp.com', projectId: 'chaychi-61eaf', storageBucket: 'chaychi-61eaf.firebasestorage.app', messagingSenderId: '669532553284', appId: '1:669532553284:web:b999af1fc4824c7affbc11' };
@@ -851,7 +854,7 @@ function setOrderStatus(id, status) {
   var patch = { status: status, statusAt: Date.now() };
   if (status === 'delivered' || status === 'rejected' || status === 'cancelled') patch.open = false;
   if (status === 'delivered') patch.deliveredAt = Date.now();
-  db.collection('orders').doc(id).update(patch).catch(function (e) { alert(e.message || 'ما انحفظ'); });
+  db.collection('orders').doc(id).update(patch).then(function () { if (window.MPush && !PV) MPush.notify('order', id); }).catch(function (e) { alert(e.message || 'ما انحفظ'); });
 }
 
 function listenOrders(id) {
@@ -1135,5 +1138,6 @@ function pvLoad() {
   }
 })();
 </script>
+<script>try { if (window.MPush) MPush.mount({ slot: 'push-slot', label: '🔔 فعّل إشعارات الطلبات والنداءات', skip: !!PV }); } catch (e) {}</script>
 </body>
 </html>

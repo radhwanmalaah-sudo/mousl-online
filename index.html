@@ -264,6 +264,7 @@ label.f { display: block; font-weight: 600; font-size: 14px; margin-bottom: 6px;
     <p class="demo-note">إذا ما سمعت شي: تأكد الجوال مو على صامت وارفع صوت الوسائط.</p>
   </main>
 
+  <div id="push-slot-c" hidden style="padding:0 16px"><div id="push-slot"></div></div>
   <main id="v-orders" hidden></main>
 
   <nav class="tabs" aria-label="التنقل"><div class="tabs-in">
@@ -297,6 +298,8 @@ label.f { display: block; font-weight: 600; font-size: 14px; margin-bottom: 6px;
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js"></script>
+<script src="push.js"></script>
 <script>
 var FBCONFIG = { apiKey: 'AIzaSyDT27G2lUpfUPcAMvRIPkllY3bzbQv87Eg', authDomain: 'chaychi-61eaf.firebaseapp.com', projectId: 'chaychi-61eaf', storageBucket: 'chaychi-61eaf.firebasestorage.app', messagingSenderId: '669532553284', appId: '1:669532553284:web:b999af1fc4824c7affbc11' };
 var ZONES_DEFAULT = []; /* ما نثبت مناطق افتراضية — تضيفها من اللوحة */
@@ -796,6 +799,7 @@ function sendAdOrder(adId) {
     return db.collection('orders').add(doc);
   }).then(function (ref) {
     orderId = ref.id; lastStage = null; adCart = {};
+    if (window.MPush && !PVIEW) MPush.notify('order', ref.id);
     try { localStorage.setItem('chaychi-order', orderId); } catch (e) {}
     show('');
     listenOrder(); go('orders');
@@ -968,6 +972,7 @@ function sendOrder() {
     });
   }).then(function (ref) {
     orderId = ref.id; lastStage = null;
+    if (window.MPush && !PVIEW) MPush.notify('order', ref.id);
     try { localStorage.setItem('chaychi-order', orderId); } catch (e) {}
     closeSheet(); listenOrder(); go('orders');
   }).catch(function (e) {
@@ -1007,7 +1012,8 @@ function listenOrder() {
 setInterval(function () {
   if (!order || order.status !== 'new') return;
   if (Date.now() - order.createdAt > ORDER_WAIT) {
-    db.collection('orders').doc(order.id).update({ status: 'cancelled', statusAt: Date.now(), open: false }).catch(function () {});
+    var oid0 = order.id;
+    db.collection('orders').doc(oid0).update({ status: 'cancelled', statusAt: Date.now(), open: false }).then(function () { if (window.MPush) MPush.notify('order', oid0); }).catch(function () {});
   }
 }, 5000);
 function callCollect() {
@@ -1016,7 +1022,8 @@ function callCollect() {
 }
 function cancelOrder() {
   if (!order || (order.status !== 'new' && order.status !== 'accepted')) return;
-  db.collection('orders').doc(order.id).update({ status: 'cancelled', statusAt: Date.now(), open: false }).catch(function (e) { showErr(errText(e)); });
+  var oid1 = order.id;
+  db.collection('orders').doc(oid1).update({ status: 'cancelled', statusAt: Date.now(), open: false }).then(function () { if (window.MPush) MPush.notify('order', oid1); }).catch(function (e) { showErr(errText(e)); });
 }
 function clearOrder() {
   if (unsubOrder) { unsubOrder(); unsubOrder = null; }
@@ -1075,6 +1082,7 @@ function renderOrders() {
 function go(tab) {
   $('v-list').hidden = tab !== 'list';
   $('v-orders').hidden = tab !== 'orders';
+  if ($('push-slot-c')) $('push-slot-c').hidden = tab !== 'orders';
   $('t-list').setAttribute('aria-current', tab === 'list' ? 'page' : 'false');
   $('t-orders').setAttribute('aria-current', tab === 'orders' ? 'page' : 'false');
   if (tab === 'orders') renderOrders();
@@ -1153,5 +1161,6 @@ ensureAuth().then(function () {
 }, function (e) { loaded = true; showErr(errText(e)); renderList(); });
 
 </script>
+<script>try { if (window.MPush && !PVIEW) MPush.mount({ slot: 'push-slot', label: '🔔 نبّهني بحالة طلبي' }); } catch (e) {}</script>
 </body>
 </html>

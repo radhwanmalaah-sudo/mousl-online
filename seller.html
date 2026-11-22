@@ -234,6 +234,7 @@ h2 .n { background: var(--tea); color: var(--tea-ink); border-radius: 999px; min
 
   <main id="v-orders">
     <p class="demo-note" id="sndhint" style="margin: 6px 2px 0">اضغط أي مكان بالشاشة مرة وحدة حتى يشتغل صوت التنبيه. الصوت يشتغل والتطبيق مفتوح.</p>
+    <div id="push-slot"></div>
     <section id="avail"></section>
     <div id="incoming"></div>
     <div id="collect"></div>
@@ -288,6 +289,8 @@ h2 .n { background: var(--tea); color: var(--tea-ink); border-radius: 999px; min
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js"></script>
+<script src="push.js"></script>
 <script>
 var FBCONFIG = { apiKey: 'AIzaSyDT27G2lUpfUPcAMvRIPkllY3bzbQv87Eg', authDomain: 'chaychi-61eaf.firebaseapp.com', projectId: 'chaychi-61eaf', storageBucket: 'chaychi-61eaf.firebasestorage.app', messagingSenderId: '669532553284', appId: '1:669532553284:web:b999af1fc4824c7affbc11' };
 var ZONES_DEFAULT = []; /* ما نثبت مناطق افتراضية — تضيفها من اللوحة */
@@ -565,7 +568,7 @@ function num(n) { return ar(String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',')).rep
 function ordDoc(id) { return db.collection('orders').doc(id); }
 function setOrder(id, patch) {
   patch.statusAt = now();
-  return ordDoc(id).update(patch).catch(function (e) { showErr(errText(e)); });
+  return ordDoc(id).update(patch).then(function () { if (window.MPush) MPush.notify('order', id); }).catch(function (e) { showErr(errText(e)); });
 }
 
 function linesHtml(o) {
@@ -1021,5 +1024,6 @@ ensureAuth().then(function () {
 }, function (e) { showGate(); $('e-login').textContent = errText(e); });
 
 </script>
+<script>try { if (window.MPush) MPush.mount({ slot: 'push-slot', label: '🔔 فعّل إشعارات الطلبات' }); } catch (e) {}</script>
 </body>
 </html>
