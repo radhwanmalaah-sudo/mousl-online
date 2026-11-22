@@ -203,6 +203,9 @@ form.g { background: var(--surface); border: 1px solid var(--line); border-radiu
           <input class="in" id="iprice" type="text" inputmode="numeric" maxlength="12" pattern="[0-9٠-٩.]*" placeholder="مثال: 120000"></div>
         <div><label class="f" for="idesc">وصف مختصر (اختياري)</label>
           <input class="in" id="idesc" maxlength="80" placeholder="جملة قصيرة"></div>
+        <div><label class="f" for="icat">القسم (اختياري)</label>
+          <input class="in" id="icat" maxlength="20" list="catlist" placeholder="مثال: ساخن، بارد، شيشة، حلويات" autocomplete="off">
+          <datalist id="catlist"></datalist></div>
         <div><label class="f" for="iimg">رابط الصورة (اختياري)</label>
           <input class="in" id="iimg" type="url" placeholder="https://... الصق رابط الصورة هنا" dir="ltr"></div>
         <p class="note" style="margin:0;font-size:12px;color:var(--ink-2)">ارفع الصورة على imgbb.com أو أي موقع، وانسخ الرابط والصقه هنا.</p>
@@ -457,9 +460,12 @@ function renderItems() {
     return;
   }
   var cur = ad.currency || 'none';
+  var cl = $('catlist');
+  if (cl) { var seenC = {}; cl.innerHTML = items.map(function (x) { var c = (x.cat || '').trim(); if (!c || seenC[c]) return ''; seenC[c] = 1; return '<option value="' + esc(c) + '">'; }).join(''); }
   $('ilist').innerHTML = items.map(function (it, i) {
     return '<div class="card"><div class="row"><div><div class="shop" style="font-size:18px">' + esc(it.name) + '</div>' +
       '<div class="meta">' +
+      (it.cat ? '<span class="pill" style="margin-left:6px">' + esc(it.cat) + '</span>' : '') +
       (it.img ? '<img src="' + esc(it.img) + '" alt="" style="width:48px;height:48px;object-fit:cover;border-radius:8px;margin-left:8px">' : '') +
       (sales && it.price != null && it.price !== '' && cur !== 'none' ? '<span class="price">' + esc(money(it.price, cur)) + '</span>' : '<span class="pill">' + (sales ? 'منتج' : 'خدمة') + '</span>') +
       '</div>' + (it.desc ? '<div class="meta">' + esc(it.desc) + '</div>' : '') +
@@ -760,6 +766,8 @@ $('f-item').addEventListener('submit', function (e) {
     return;
   }
   if (imgUrl) item.img = imgUrl;
+  var catV = ($('icat') && $('icat').value.trim()) || '';
+  if (catV) item.cat = catV.slice(0, 20);
   var items = (ad.items || []).slice();
   items.push(item);
   db.collection('ads').doc(adId).update({ items: items }).then(function () {

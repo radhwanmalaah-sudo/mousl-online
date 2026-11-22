@@ -55,6 +55,32 @@ h2 { font-size: 13px; font-weight: 600; color: var(--ink-2); margin: 18px 0 8px;
 .bar b { flex: 1; }
 .pill { display: inline-block; background: var(--surface-2); border-radius: 999px; padding: 2px 10px; font-size: 12px; font-weight: 600; }
 .empty { text-align: center; color: var(--ink-2); padding: 24px; }
+
+.srch { margin-bottom: 8px; }
+.cats { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 10px; scrollbar-width: none; }
+.cats::-webkit-scrollbar { display: none; }
+.chip { flex: 0 0 auto; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 6px 14px; font-size: 14px; white-space: nowrap; }
+.chip[aria-pressed="true"] { background: var(--tea); color: var(--tea-ink); border-color: var(--tea); font-weight: 600; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.pcard { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 8px; display: flex; flex-direction: column; gap: 4px; }
+.thumb { position: relative; aspect-ratio: 1 / 1; border-radius: 12px; overflow: hidden; }
+.thumb .ini { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 44px; font-weight: 700; }
+.thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.pname { font-weight: 600; font-size: 14px; line-height: 1.3; }
+.pdesc { color: var(--ink-2); font-size: 12px; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.6em; }
+.prow { display: flex; justify-content: space-between; align-items: center; gap: 6px; margin-top: auto; min-height: 34px; }
+.prow .price { font-size: 14px; }
+.addbtn { width: 34px; height: 34px; border-radius: 50%; border: 0; background: var(--tea); color: var(--tea-ink); font-size: 22px; line-height: 1; padding: 0; }
+.stp { display: inline-flex; align-items: center; background: var(--surface-2); border-radius: 999px; }
+.stp button { width: 30px; height: 30px; border: 0; background: transparent; font-size: 18px; padding: 0; border-radius: 50%; }
+.stp output { min-width: 1.4em; text-align: center; font-weight: 600; }
+.sheet { position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,.45); display: flex; align-items: flex-end; justify-content: center; }
+.sheet-in { background: var(--bg); width: 100%; max-width: 520px; max-height: 82vh; overflow-y: auto; border-radius: 20px 20px 0 0; padding: 14px 14px calc(16px + env(safe-area-inset-bottom)); }
+.sline { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.sline .sn { flex: 1; font-weight: 600; }
+.barinfo { flex: 1; text-align: start; background: none; border: 0; padding: 0; }
+.barinfo b { display: block; }
+.barinfo small { color: var(--ink-2); font-size: 12px; }
 [hidden] { display: none !important; }
 </style>
 </head>
@@ -82,8 +108,9 @@ h2 { font-size: 13px; font-weight: 600; color: var(--ink-2); margin: 18px 0 8px;
       <span class="pill" id="tbl-pill">طاولة</span>
       <button class="btn-line" type="button" id="btn-change-tbl">غيّر الطاولة</button>
     </div>
-    <h2>القائمة</h2>
-    <div id="list"></div>
+    <input class="in srch" id="q" type="search" placeholder="ابحث بالقائمة..." autocomplete="off">
+    <div class="cats" id="cats"></div>
+    <div class="grid" id="list"></div>
     <p class="err" id="err" role="alert"></p>
   </div>
 
@@ -98,8 +125,17 @@ h2 { font-size: 13px; font-weight: 600; color: var(--ink-2); margin: 18px 0 8px;
 </div>
 
 <div class="bar" id="bar" hidden>
-  <b id="total">المجموع: ٠</b>
+  <button class="barinfo" id="btn-cart" type="button" data-act="cart-open"><b id="total">المجموع: ٠</b><small id="barcnt">السلة فاضية</small></button>
   <button class="btn" id="btn-send" style="width:auto;padding:10px 18px" disabled>أرسل الطلب</button>
+</div>
+
+<div class="sheet" id="sheet" hidden>
+  <div class="sheet-in">
+    <div class="row"><h2 style="margin:0;font-size:16px;color:var(--ink)">طلبك</h2><button class="btn-line" type="button" data-act="cart-close">رجوع للقائمة</button></div>
+    <div id="slines"></div>
+    <div class="row" style="margin:12px 0"><b>المجموع</b><b class="price" id="stotal"></b></div>
+    <button class="btn" type="button" id="btn-send2">أرسل الطلب</button>
+  </div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
@@ -211,34 +247,73 @@ function renderTables() {
   }
 }
 
+var curCat = '', searchQ = '';
+function hueOf(t) { var h = 0; t = String(t || ''); for (var i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) % 360; return h; }
+function catOf(it) { return ((it && it.cat) || '').trim(); }
+function stepperHtml(i, q) {
+  return '<div class="stp"><button type="button" data-act="dec" data-i="' + i + '" aria-label="نقص">−</button><output>' + ar(q) + '</output><button type="button" data-act="inc" data-i="' + i + '" aria-label="زيادة">+</button></div>';
+}
 function renderMenu() {
   var items = ad.items || [];
   var cur = ad.currency || 'iqd';
   if (!items.length) {
-    $('list').innerHTML = '<div class="empty">القائمة فاضية حالياً.</div>';
+    $('list').innerHTML = '<div class="empty" style="grid-column:1/-1">القائمة فاضية حالياً.</div>';
+    $('cats').innerHTML = '';
+    updateBar();
     return;
   }
-  $('list').innerHTML = items.map(function (it, i) {
-    var q = cart[i] || 0;
-    return '<div class="card">' +
-      (it.img ? '<img src="' + esc(it.img) + '" alt="" style="width:100%;max-height:180px;object-fit:cover;border-radius:12px;margin-bottom:8px">' : '') +
-      '<div class="row"><div><div class="name">' + esc(it.name) + '</div>' +
-      (it.desc ? '<div class="meta">' + esc(it.desc) + '</div>' : '') +
-      '</div><div class="price">' + esc(money(it.price, cur)) + '</div></div>' +
-      '<div class="qty" style="margin-top:8px">' +
-      '<button type="button" data-act="dec" data-i="' + i + '">−</button>' +
-      '<output>' + ar(q) + '</output>' +
-      '<button type="button" data-act="inc" data-i="' + i + '">+</button></div></div>';
-  }).join('');
+  var cats = [], seen = {}, hasNone = false;
+  items.forEach(function (it) { var c = catOf(it); if (!c) hasNone = true; else if (!seen[c]) { seen[c] = 1; cats.push(c); } });
+  if (cats.length && hasNone) cats.push('أخرى');
+  if (curCat && cats.indexOf(curCat) < 0) curCat = '';
+  $('cats').hidden = !cats.length;
+  $('cats').innerHTML = cats.length ? ['الكل'].concat(cats).map(function (c) {
+    var val = c === 'الكل' ? '' : c;
+    return '<button type="button" class="chip" data-act="cat" data-c="' + esc(val) + '" aria-pressed="' + (curCat === val) + '">' + esc(c) + '</button>';
+  }).join('') : '';
+  var q = searchQ.trim().toLowerCase(), shown = 0, html = '';
+  items.forEach(function (it, i) {
+    var c = catOf(it) || (cats.length ? 'أخرى' : '');
+    if (curCat && c !== curCat) return;
+    if (q && (String(it.name || '') + ' ' + String(it.desc || '')).toLowerCase().indexOf(q) < 0) return;
+    shown++;
+    var qn = cart[i] || 0, nm = String(it.name || '');
+    html += '<div class="pcard"><div class="thumb" style="background:hsl(' + hueOf(nm) + ',42%,40%)">' +
+      '<div class="ini">' + esc(nm.charAt(0)) + '</div>' +
+      (it.img ? '<img src="' + esc(it.img) + '" alt="" loading="lazy" onerror="this.style.display=\'none\'">' : '') + '</div>' +
+      '<div class="pname">' + esc(nm) + '</div>' +
+      '<div class="pdesc">' + esc(it.desc || '') + '</div>' +
+      '<div class="prow"><span class="price">' + (cur === 'none' ? '' : esc(money(it.price, cur))) + '</span>' +
+      (qn > 0 ? stepperHtml(i, qn) : '<button type="button" class="addbtn" data-act="inc" data-i="' + i + '" aria-label="أضف">+</button>') +
+      '</div></div>';
+  });
+  $('list').innerHTML = shown ? html : '<div class="empty" style="grid-column:1/-1">ماكو نتائج.</div>';
   updateBar();
 }
 
+function renderSheet() {
+  var items = ad.items || [], cur = ad.currency || 'iqd', html = '';
+  items.forEach(function (it, i) {
+    var qn = cart[i] || 0; if (!qn) return;
+    html += '<div class="sline"><span class="sn">' + esc(it.name) + '</span>' + stepperHtml(i, qn) +
+      '<span class="price" style="min-width:5.5em;text-align:end">' + (cur === 'none' ? '' : esc(money(qn * (Number(it.price) || 0), cur))) + '</span></div>';
+  });
+  $('slines').innerHTML = html || '<div class="empty">السلة فاضية.</div>';
+  $('stotal').textContent = cur === 'none' ? '' : money(cartTotal(), cur);
+  $('btn-send2').disabled = !html;
+}
+function refreshAll() {
+  renderMenu();
+  if (!$('sheet').hidden) { renderSheet(); if (!cartCount()) $('sheet').hidden = true; }
+}
+function cartCount() { return Object.keys(cart).reduce(function (t, k) { return t + (cart[k] > 0 ? cart[k] : 0); }, 0); }
+
 function updateBar() {
   var cur = (ad && ad.currency) || 'iqd';
-  var tot = cartTotal();
-  var has = Object.keys(cart).some(function (k) { return cart[k] > 0; });
-  $('total').textContent = 'المجموع: ' + money(tot, cur);
-  $('btn-send').disabled = !has || !tableNo;
+  var n = cartCount();
+  $('total').textContent = cur === 'none' ? (n ? 'طلبك جاهز' : 'السلة فاضية') : 'المجموع: ' + money(cartTotal(), cur);
+  $('barcnt').textContent = n ? ar(n) + ' ' + (n === 1 ? 'صنف' : 'أصناف') + ' · اضغط لمراجعة الطلب' : 'اختار من القائمة';
+  $('btn-send').disabled = !n || !tableNo;
   $('bar').hidden = !tableNo;
 }
 
@@ -348,7 +423,7 @@ $('btn-send').addEventListener('click', function () {
     };
     return db.collection('orders').add(doc);
   }).then(function () {
-    cart = {};
+    cart = {}; $('sheet').hidden = true;
     $('menu').hidden = true; $('bar').hidden = true; $('done').hidden = false;
     $('done-tbl').textContent = ar(tableNo);
     $('btn-send').disabled = false;
@@ -358,12 +433,18 @@ $('btn-send').addEventListener('click', function () {
   });
 });
 
+$('q').addEventListener('input', function () { searchQ = $('q').value; renderMenu(); });
+$('btn-send2').addEventListener('click', function () { $('sheet').hidden = true; $('btn-send').click(); });
+$('sheet').addEventListener('click', function (e) { if (e.target === $('sheet')) $('sheet').hidden = true; });
 document.addEventListener('click', function (e) {
   var t = e.target.closest('[data-act]');
   if (!t) return;
   var a = t.dataset.act, i = Number(t.dataset.i);
-  if (a === 'inc') { cart[i] = Math.min((cart[i] || 0) + 1, 99); renderMenu(); }
-  else if (a === 'dec') { cart[i] = Math.max((cart[i] || 0) - 1, 0); renderMenu(); }
+  if (a === 'inc') { cart[i] = Math.min((cart[i] || 0) + 1, 99); refreshAll(); }
+  else if (a === 'dec') { cart[i] = Math.max((cart[i] || 0) - 1, 0); refreshAll(); }
+  else if (a === 'cat') { curCat = t.dataset.c || ''; renderMenu(); }
+  else if (a === 'cart-open') { if (cartCount()) { renderSheet(); $('sheet').hidden = false; } }
+  else if (a === 'cart-close') { $('sheet').hidden = true; }
 });
 
 (function () {
