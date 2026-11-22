@@ -206,6 +206,10 @@ form.g { background: var(--surface); border: 1px solid var(--line); border-radiu
         <div><label class="f" for="icat">القسم (اختياري)</label>
           <input class="in" id="icat" maxlength="20" list="catlist" placeholder="مثال: ساخن، بارد، شيشة، حلويات" autocomplete="off">
           <datalist id="catlist"></datalist></div>
+        <div><label class="f" for="ifile">صورة من جهازك (اختياري)</label>
+          <input class="in" id="ifile" type="file" accept="image/*">
+          <div id="iprev" hidden style="margin-top:8px;display:flex;align-items:center;gap:10px"><img id="iprevimg" alt="" style="width:64px;height:64px;object-fit:cover;border-radius:10px"><button type="button" class="btn-line" id="iprevx">إزالة الصورة</button></div>
+          <p class="note" style="margin:6px 0 0;font-size:12px">تتصغّر تلقائياً قبل الحفظ. أو الصق رابط صورة بالحقل اللي تحت.</p></div>
         <div><label class="f" for="iimg">رابط الصورة (اختياري)</label>
           <input class="in" id="iimg" type="url" placeholder="https://... الصق رابط الصورة هنا" dir="ltr"></div>
         <p class="note" style="margin:0;font-size:12px;color:var(--ink-2)">ارفع الصورة على imgbb.com أو أي موقع، وانسخ الرابط والصقه هنا.</p>
@@ -471,6 +475,42 @@ function renderItems() {
       '</div>' + (it.desc ? '<div class="meta">' + esc(it.desc) + '</div>' : '') +
       '</div><button class="btn-line danger" data-act="delitem" data-i="' + i + '">احذف</button></div></div>';
   }).join('');
+}
+
+var pendingImg = '';
+function clearPendingImg() { pendingImg = ''; if ($('ifile')) $('ifile').value = ''; if ($('iprev')) $('iprev').hidden = true; }
+function shrinkImage(file, cb) {
+  var rd = new FileReader();
+  rd.onload = function () {
+    var im = new Image();
+    im.onload = function () {
+      var S = 360, w = im.width, h = im.height, side = Math.min(w, h);
+      var cv = document.createElement('canvas'); cv.width = S; cv.height = S;
+      var cx = cv.getContext('2d');
+      cx.fillStyle = '#fff'; cx.fillRect(0, 0, S, S);
+      cx.drawImage(im, (w - side) / 2, (h - side) / 2, side, side, 0, 0, S, S);
+      var q = 0.72, out = cv.toDataURL('image/jpeg', q);
+      while (out.length > 30000 && q > 0.35) { q -= 0.1; out = cv.toDataURL('image/jpeg', q); }
+      cb(out);
+    };
+    im.onerror = function () { cb(''); };
+    im.src = rd.result;
+  };
+  rd.onerror = function () { cb(''); };
+  rd.readAsDataURL(file);
+}
+if ($('ifile')) {
+  $('ifile').addEventListener('change', function () {
+    var f = $('ifile').files && $('ifile').files[0];
+    if (!f) { clearPendingImg(); return; }
+    if (!/^image\//.test(f.type)) { $('ierr').textContent = 'اختار ملف صورة.'; clearPendingImg(); return; }
+    shrinkImage(f, function (d) {
+      if (!d) { $('ierr').textContent = 'ما قدرت أقرأ الصورة. جرب غيرها.'; clearPendingImg(); return; }
+      pendingImg = d; $('ierr').textContent = '';
+      $('iprevimg').src = d; $('iprev').hidden = false;
+    });
+  });
+  $('iprevx').addEventListener('click', clearPendingImg);
 }
 
 function renderAll() {
@@ -765,12 +805,14 @@ $('f-item').addEventListener('submit', function (e) {
     $('ierr').textContent = 'الرابط لازم يبدأ بـ http أو https.';
     return;
   }
-  if (imgUrl) item.img = imgUrl;
+  if (pendingImg) item.img = pendingImg; else if (imgUrl) item.img = imgUrl;
   var catV = ($('icat') && $('icat').value.trim()) || '';
   if (catV) item.cat = catV.slice(0, 20);
   var items = (ad.items || []).slice();
   items.push(item);
+  if (JSON.stringify(items).length > 900000) { $('ierr').textContent = 'القائمة وصلت الحد الأقصى للحجم. احذف صور قديمة أو استخدم رابط صورة.'; return; }
   db.collection('ads').doc(adId).update({ items: items }).then(function () {
+    clearPendingImg();
     $('iname').value = ''; $('iprice').value = ''; $('idesc').value = '';
     if ($('iimg')) $('iimg').value = '';
     $('ierr').textContent = '';
