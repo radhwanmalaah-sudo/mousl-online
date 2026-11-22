@@ -46,6 +46,17 @@ label.f { display: block; font-weight: 600; font-size: 14px; margin-bottom: 4px;
 .btns { display: flex; gap: 8px; flex-wrap: wrap; }
 .row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .pill { display: inline-block; font-size: 12px; font-weight: 600; padding: 1px 10px; border-radius: 999px; background: var(--surface-2); color: var(--ink-2); }
+.tlegend { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+.tlegend .lg { font-size: 11px; font-weight: 600; padding: 1px 9px; border-radius: 999px; border: 1px solid var(--line); }
+.tboard { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; margin-bottom: 8px; }
+.tt { border: 1px solid var(--line); border-radius: 12px; padding: 8px 6px; text-align: center; background: var(--surface); display: grid; gap: 3px; align-content: start; }
+.tt b { font-size: 18px; }
+.tt small { font-size: 11px; color: var(--ink-2); min-height: 14px; }
+.tt button { padding: 4px 6px; font-size: 12px; border-radius: 9px; border: 1px solid currentColor; background: transparent; color: inherit; font-weight: 600; }
+.tt.free, .lg.free { background: #E7F4EA; color: #1F6B36; border-color: #BFE0C7; }
+.tt.busy, .lg.busy { background: #FFF1DC; color: #9A5B00; border-color: #F1D3A1; }
+.tt.bill, .lg.bill { background: #FBE4E1; color: #A32A1B; border-color: #E5B7AE; }
+.tt.leave, .lg.leave { background: #E3EEFB; color: #1D4F8C; border-color: #B7CDE8; }
 .pill.ok { background: var(--ok-bg); color: var(--ok); }
 form.g { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 16px; display: grid; gap: 12px; }
 .seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; background: var(--surface-2); border-radius: 14px; padding: 4px; }
@@ -136,6 +147,12 @@ form.g { background: var(--surface); border: 1px solid var(--line); border-radiu
     </div>
 
     <div id="pane-orders" role="tabpanel">
+      <div class="orders-panel" id="tables-box" hidden>
+        <h2>الطاولات <span id="tcnt"></span></h2>
+        <div class="tlegend"><span class="lg free">فارغة</span><span class="lg busy">مشغولة</span><span class="lg bill">طلبت الحساب</span><span class="lg leave">تغادر</span></div>
+        <div class="tboard" id="tboard"></div>
+        <p class="note">الطاولة تصير مشغولة تلقائياً من أول طلب، وتبقى مشغولة لحد ما تضغط «فرّغ». ⏰ = مرّت ساعة بدون طلب جديد، تأكد إذا الزبون غادر.</p>
+      </div>
       <div class="orders-panel" id="calls-box" hidden>
         <h2>نداءات الطاولات <span id="ccnt"></span></h2>
         <div class="olist" id="clist"></div>
@@ -656,14 +673,85 @@ function showTab(name) {
   if (ts) ts.setAttribute('aria-selected', String(!orders));
   try { localStorage.setItem('mousl-shop-tab', name); } catch (e) {}
 }
+var OCC_MAX = 12 * 3600 * 1000, QUIET_MS = 60 * 60 * 1000;
+function tableInfo() {
+  // لكل طاولة: آخر نشاط، هل فيه طلبات ما خلصت، هل فيه نداء حساب/مغادرة
+  var info = {}, freed = (ad && ad.tableFreed) || {}, now = Date.now();
+  adOrders.forEach(function (o) {
+    var tn = Number(o.tableNo) || 0;
+    if (tn < 1) return;
+    var st = o.status || 'new';
+    if (st === 'cancelled' || st === 'rejected') return;
+    var at = Number(o.createdAt) || 0;
+    if (at <= (Number(freed[tn]) || 0)) return;
+    if (now - at > OCC_MAX) return;
+    var x = info[tn] || (info[tn] = { last: 0, unfinished: 0, bill: false, leave: false });
+    var t = Math.max(at, Number(o.statusAt) || 0);
+    if (t > x.last) x.last = t;
+    if (o.open !== false && (st === 'new' || st === 'open' || st === 'accepted' || st === 'ready')) x.unfinished++;
+  });
+  adCalls.forEach(function (c) {
+    var tn = Number(c.tableNo) || 0;
+    if (tn < 1 || c.open === false) return;
+    var x = info[tn] || (info[tn] = { last: 0, unfinished: 0, bill: false, leave: false, callOnly: true });
+    if (c.type === 'bill') x.bill = true;
+    if (c.type === 'leave') x.leave = true;
+  });
+  return info;
+}
+function renderTablesBoard() {
+  var box = $('tables-box'), bd = $('tboard');
+  if (!box || !bd) return;
+  if (!isVenue() || !ad) { box.hidden = true; return; }
+  box.hidden = false;
+  var n = Math.max(1, Math.min(200, Number(ad.tableCount) || 10));
+  var info = tableInfo(), now = Date.now(), busyN = 0, html = '';
+  for (var i = 1; i <= n; i++) {
+    var x = info[i], cls = 'free', sub = 'فارغة', btn = '';
+    if (x && (x.last || x.bill || x.leave)) {
+      var mins = x.last ? Math.max(0, Math.round((now - x.last) / 60000)) : 0;
+      var quiet = x.last && !x.unfinished && (now - x.last) > QUIET_MS;
+      if (x.leave) { cls = 'leave'; sub = '🚪 تغادر'; }
+      else if (x.bill) { cls = 'bill'; sub = '🧾 تطلب الحساب'; }
+      else { cls = 'busy'; sub = (quiet ? '⏰ ' : '') + (x.last ? 'قبل ' + ar(mins) + ' د' : 'مشغولة'); }
+      busyN++;
+      btn = '<button type="button" data-act="free-tbl" data-t="' + i + '">فرّغ</button>';
+    }
+    html += '<div class="tt ' + cls + '"><b>' + ar(i) + '</b><small>' + sub + '</small>' + btn + '</div>';
+  }
+  bd.innerHTML = html;
+  $('tcnt').textContent = '(' + ar(busyN) + ' / ' + ar(n) + ')';
+}
+function freeTable(tn) {
+  if (PV || !adId || !ad) return;
+  tn = Number(tn);
+  if (!(tn >= 1)) return;
+  var info = tableInfo()[tn];
+  var open = adOrders.filter(function (o) {
+    return Number(o.tableNo) === tn && o.open !== false && ['new', 'open', 'accepted', 'ready'].indexOf(o.status || 'new') >= 0;
+  });
+  var msg = 'تفرّغ طاولة ' + ar(tn) + '؟';
+  if (open.length) msg += '\nفيها ' + ar(open.length) + ' طلب ما خلص، ينحسب منتهي.';
+  if (!window.confirm(msg)) return;
+  var now = Date.now(), b = db.batch();
+  var upd = {}; upd['tableFreed.' + tn] = now;
+  b.update(db.collection('ads').doc(adId), upd);
+  open.forEach(function (o) {
+    b.update(db.collection('orders').doc(o.id), { status: 'delivered', statusAt: now, open: false, deliveredAt: now });
+  });
+  adCalls.filter(function (c) { return Number(c.tableNo) === tn && c.open !== false; }).forEach(function (c) {
+    b.update(db.collection('calls').doc(c.id), { open: false });
+  });
+  ad.tableFreed = ad.tableFreed || {}; ad.tableFreed[tn] = now;
+  adCalls = adCalls.filter(function (c) { return Number(c.tableNo) !== tn; });
+  renderTablesBoard(); renderCalls();
+  b.commit().catch(function (e) { alert(e.message || 'ما انحفظ'); });
+}
 function syncBusyTables(openOrders) {
   if (PV) return;
   if (!isVenue() || !adId) return;
-  var busy = {};
-  openOrders.forEach(function (o) {
-    var tn = Number(o.tableNo) || 0;
-    if (tn >= 1) busy[tn] = 1;
-  });
+  var inf = tableInfo(), busy = {};
+  Object.keys(inf).forEach(function (k) { if (inf[k].last) busy[k] = 1; });
   var list = Object.keys(busy).map(Number).sort(function (a, b) { return a - b; });
   var prev = (ad.busyTables || []).slice().sort(function (a, b) { return a - b; });
   var same = list.length === prev.length && list.every(function (v, i) { return v === prev[i]; });
@@ -692,12 +780,8 @@ function renderDayReport(openOrders) {
   $('rep-income').textContent = moneyOrd(income, cur === 'none' ? 'iqd' : cur);
   var busyN = 0;
   if (isVenue()) {
-    var set = {};
-    openOrders.forEach(function (o) {
-      var tn = Number(o.tableNo) || 0;
-      if (tn) set[tn] = 1;
-    });
-    busyN = Object.keys(set).length;
+    var inf = tableInfo();
+    busyN = Object.keys(inf).filter(function (k) { return inf[k].last; }).length;
   }
   $('rep-busy').textContent = ar(busyN);
   var busyLabel = $('rep-busy') && $('rep-busy').previousElementSibling;
@@ -718,6 +802,7 @@ function renderOrders() {
   }
   renderDayReport(open);
   syncBusyTables(open);
+  renderTablesBoard();
   if (!open.length) {
     list.innerHTML = '<div class="empty">ماكو طلبات حالياً.</div>';
     return;
@@ -794,7 +879,7 @@ function listenOrders(id) {
     renderOrders();
   }
   function startListen() {
-    unsubOrders = db.collection('orders').where('adId', '==', id).limit(40)
+    unsubOrders = db.collection('orders').where('adId', '==', id).limit(120)
       .onSnapshot(apply, function (e) {
         var box = $('olist');
         if (box) box.innerHTML = '<div class="empty">ما كدرت أقرأ الطلبات: ' + esc((e && e.message) || 'صلاحيات') +
@@ -819,6 +904,7 @@ function listenCalls(id) {
     firstCalls = false;
     if (fresh) { playNewOrderSound(); try { showTab('orders'); document.title = '🔔 نداء من طاولة'; } catch (e) {} }
     renderCalls();
+    renderTablesBoard();
   }, function () {});
 }
 function renderCalls() {
@@ -829,8 +915,8 @@ function renderCalls() {
   $('clist').innerHTML = adCalls.map(function (c) {
     var mins = Math.max(0, Math.round((Date.now() - (c.createdAt || 0)) / 60000));
     return '<div class="card"><div class="row"><div><div class="shop" style="font-size:18px">طاولة ' + ar(c.tableNo) + '</div>' +
-      '<div class="meta">' + (c.type === 'bill' ? '🧾 تطلب الحساب' : '🔔 تنادي الويتر') + ' · قبل ' + ar(mins) + ' د</div></div>' +
-      '<button class="btn" data-act="call-done" data-id="' + esc(c.id) + '">تم</button></div></div>';
+      '<div class="meta">' + (c.type === 'bill' ? '🧾 تطلب الحساب' : (c.type === 'leave' ? '🚪 خلصت ويغادر' : '🔔 تنادي الويتر')) + ' · قبل ' + ar(mins) + ' د</div></div>' +
+      (c.type === 'leave' ? '<button class="btn" data-act="free-tbl" data-t="' + esc(c.tableNo) + '">فرّغ الطاولة</button>' : '<button class="btn" data-act="call-done" data-id="' + esc(c.id) + '">تم</button>') + '</div></div>';
   }).join('');
 }
 
@@ -846,6 +932,7 @@ function openApp(id, data) {
   }, function (e) { $('lerr').textContent = e.message || 'خطأ'; });
   listenOrders(id);
   if (!PV) listenCalls(id);
+  if (!window._tbTimer) window._tbTimer = setInterval(function () { try { renderTablesBoard(); } catch (e) {} }, 60000);
   renderAll();
   renderOrders();
 }
@@ -957,6 +1044,7 @@ document.addEventListener('click', function (e) {
   else if (a === 'o-way') setOrderStatus(t.dataset.id, 'onway');
   else if (a === 'o-done') setOrderStatus(t.dataset.id, 'delivered');
   else if (a === 'o-ready') setOrderStatus(t.dataset.id, 'ready');
+  else if (a === 'free-tbl') freeTable(t.dataset.t);
   else if (a === 'call-done') db.collection('calls').doc(t.dataset.id).update({ open: false }).catch(function (e) { alert(e.message || 'ما انحفظ'); });
   else if (a === 'rm-logo') db.collection('ads').doc(adId).update({ logo: firebase.firestore.FieldValue.delete() }).catch(function (e) { $('id-err').textContent = e.message || 'ما انحفظ'; });
   else if (a === 'rm-cover') db.collection('ads').doc(adId).update({ cover: firebase.firestore.FieldValue.delete() }).catch(function (e) { $('id-err').textContent = e.message || 'ما انحفظ'; });

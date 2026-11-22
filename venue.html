@@ -57,12 +57,13 @@ button { cursor: pointer; }
 .tbtn:disabled { background: var(--surface-2); color: var(--ink-2); opacity: .7; cursor: not-allowed; }
 .callrow { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 4px 0 8px; }
 .callrow .btn-line { padding: 9px 8px; font-size: 14px; }
+.callrow .wide { grid-column: 1 / -1; }
 .trk { overflow: hidden; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; margin-bottom: 8px; }
 .trk .tl { font-size: 13px; color: var(--ink-2); margin-bottom: 8px; }
 .prog { display: flex; align-items: center; }
 .prog span { flex: 1; text-align: center; font-size: 11px; color: var(--ink-2); position: relative; padding-top: 16px; }
 .prog span::before { content: ''; position: absolute; top: 3px; left: 50%; transform: translateX(-50%); width: 10px; height: 10px; border-radius: 50%; background: var(--line); z-index: 1; }
-.prog span::after { content: ''; position: absolute; top: 7px; right: 50%; width: 100%; height: 2px; background: var(--line); }
+.prog span::after { content: ''; position: absolute; top: 7px; left: 50%; width: 100%; height: 2px; background: var(--line); }
 .prog span:first-child::after { display: none; }
 .prog span.on { color: var(--ink); font-weight: 600; }
 .prog span.on::before { background: var(--ok); }
@@ -158,6 +159,7 @@ h2 { font-size: 13px; font-weight: 600; color: var(--ink-2); margin: 18px 0 8px;
     <div class="callrow">
       <button class="btn-line" type="button" data-act="call" data-t="waiter">🔔 نادي الويتر</button>
       <button class="btn-line" type="button" data-act="call" data-t="bill">🧾 اطلب الحساب</button>
+      <button class="btn-line wide" type="button" data-act="call" data-t="leave">🚪 خلصت وراح أغادر</button>
     </div>
     <p class="note" id="callmsg" role="status" style="margin:0 0 8px" hidden></p>
     <input class="in srch" id="q" type="search" placeholder="ابحث بالقائمة..." autocomplete="off">
@@ -177,6 +179,7 @@ h2 { font-size: 13px; font-weight: 600; color: var(--ink-2); margin: 18px 0 8px;
     <div class="callrow">
       <button class="btn-line" type="button" data-act="call" data-t="waiter">🔔 نادي الويتر</button>
       <button class="btn-line" type="button" data-act="call" data-t="bill">🧾 اطلب الحساب</button>
+      <button class="btn-line wide" type="button" data-act="call" data-t="leave">🚪 خلصت وراح أغادر</button>
     </div>
     <p class="note" id="callmsg2" role="status" hidden></p>
   </div>
@@ -301,7 +304,7 @@ function renderTables() {
   try { kept = Number(localStorage.getItem('chaychi-venue-tbl-' + adId)) || 0; } catch (e) {}
   if (isClosed()) { $('tgrid').innerHTML = ''; var h0 = $('tbl-busy-hint'); h0.hidden = true; return; }
   for (var i = 1; i <= n; i++) {
-    if (busy[i]) html += '<button type="button" class="tbtn" disabled aria-label="طاولة ' + i + ' مشغولة">' + ar(i) + '<small>مشغولة</small></button>';
+    if (busy[i] && kept !== i) html += '<button type="button" class="tbtn" disabled aria-label="طاولة ' + i + ' مشغولة">' + ar(i) + '<small>مشغولة</small></button>';
     else { free++; html += '<button type="button" class="tbtn' + (kept === i ? ' last' : '') + '" data-act="tbl" data-n="' + i + '">' + ar(i) + (kept === i ? '<small>طاولتك</small>' : '') + '</button>'; }
   }
   $('tgrid').innerHTML = html;
@@ -311,7 +314,8 @@ function renderTables() {
 }
 function pickTable(n) {
   if (isClosed()) return;
-  if (busySet()[n]) { $('vsub').textContent = 'طاولة ' + ar(n) + ' مشغولة. اختار طاولة ثانية.'; renderTables(); return; }
+  var keptT = 0; try { keptT = Number(localStorage.getItem('chaychi-venue-tbl-' + adId)) || 0; } catch (e) {}
+  if (busySet()[n] && keptT !== n) { $('vsub').textContent = 'طاولة ' + ar(n) + ' مشغولة. اختار طاولة ثانية.'; renderTables(); return; }
   tableNo = n;
   try { localStorage.setItem('chaychi-venue-tbl-' + adId, String(n)); } catch (e) {}
   cart = {}; showMenu();
@@ -425,7 +429,8 @@ function loadVenue(id) {
     try { var usp = new URLSearchParams(location.search); tp = Number(usp.get('t') || usp.get('table') || 0) || 0; } catch (e) {}
     var maxT = Math.max(1, Math.min(200, Number(ad.tableCount) || 10));
     if (tp >= 1 && tp <= maxT && !isClosed()) {
-      if (busySet()[tp]) $('vsub').textContent = 'طاولة ' + ar(tp) + ' مشغولة حالياً. اختار طاولة ثانية.';
+      var keptQ = 0; try { keptQ = Number(localStorage.getItem('chaychi-venue-tbl-' + adId)) || 0; } catch (e) {}
+      if (busySet()[tp] && keptQ !== tp) $('vsub').textContent = 'طاولة ' + ar(tp) + ' مشغولة حالياً. اختار طاولة ثانية.';
       else pickTable(tp);
     }
   }).catch(function (e) {
@@ -482,7 +487,8 @@ function callStaff(type, msgEl) {
     return db.collection('calls').doc(adId + '_' + tableNo + '_' + type).set({ adId: adId, tableNo: tableNo, type: type, open: true, createdAt: now, customerUid: u.uid });
   }).then(function () {
     try { localStorage.setItem(key, String(now)); } catch (e) {}
-    say(type === 'bill' ? 'وصل طلب الحساب للموظف.' : 'وصل ندائك للموظف.');
+    if (type === 'leave') { try { localStorage.removeItem('chaychi-venue-tbl-' + adId); } catch (x) {} say('شكراً لزيارتك! نتمنى نشوفك قريباً 🌿'); }
+    else say(type === 'bill' ? 'وصل طلب الحساب للموظف.' : 'وصل ندائك للموظف.');
   }).catch(function (e) {
     if (e && e.code === 'permission-denied') { try { localStorage.setItem(key, String(now)); } catch (x) {} say('نداؤك وصل وبانتظار الموظف.'); }
     else say('ما وصل النداء. تأكد من الإنترنت.');
