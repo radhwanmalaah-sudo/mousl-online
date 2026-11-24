@@ -58,6 +58,7 @@ button { cursor: pointer; }
 .callrow { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 4px 0 8px; }
 .callrow .btn-line { padding: 9px 8px; font-size: 14px; }
 .callrow .wide { grid-column: 1 / -1; }
+.callrow .btn-line:disabled { opacity: .5; }
 .trk { overflow: hidden; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; margin-bottom: 8px; }
 .trk .tl { font-size: 13px; color: var(--ink-2); margin-bottom: 8px; }
 .prog { display: flex; align-items: center; }
@@ -159,9 +160,10 @@ h2 { font-size: 13px; font-weight: 600; color: var(--ink-2); margin: 18px 0 8px;
     <div class="callrow">
       <button class="btn-line" type="button" data-act="call" data-t="waiter">🔔 نادي الويتر</button>
       <button class="btn-line" type="button" data-act="call" data-t="bill">🧾 اطلب الحساب</button>
-      <button class="btn-line wide" type="button" data-act="call" data-t="leave">🚪 خلصت وراح أغادر</button>
+      <button class="btn-line wide" type="button" data-act="call" data-t="leave" data-leave="1" disabled>🚪 خلصت وراح أغادر</button>
     </div>
     <p class="note" id="callmsg" role="status" style="margin:0 0 8px" hidden></p>
+    <p class="note leavehint" style="margin:0 0 8px;font-size:12px"></p>
     <input class="in srch" id="q" type="search" placeholder="ابحث بالقائمة..." autocomplete="off">
     <div class="cats" id="cats"></div>
     <div class="grid" id="list"></div>
@@ -180,9 +182,19 @@ h2 { font-size: 13px; font-weight: 600; color: var(--ink-2); margin: 18px 0 8px;
     <div class="callrow">
       <button class="btn-line" type="button" data-act="call" data-t="waiter">🔔 نادي الويتر</button>
       <button class="btn-line" type="button" data-act="call" data-t="bill">🧾 اطلب الحساب</button>
-      <button class="btn-line wide" type="button" data-act="call" data-t="leave">🚪 خلصت وراح أغادر</button>
+      <button class="btn-line wide" type="button" data-act="call" data-t="leave" data-leave="1" disabled>🚪 خلصت وراح أغادر</button>
     </div>
     <p class="note" id="callmsg2" role="status" hidden></p>
+    <p class="note leavehint" style="margin:0 0 8px;font-size:12px"></p>
+  </div>
+
+  <div id="farewell" hidden>
+    <div class="card" style="text-align:center;padding:28px 18px">
+      <div style="font-size:44px">🌿</div>
+      <div class="brand" style="font-size:24px;margin:8px 0">مع السلامة</div>
+      <p id="fw-text" style="font-size:17px;line-height:1.9;margin:8px 0"></p>
+      <p class="note">تقدر تسكّر الصفحة.</p>
+    </div>
   </div>
 </div>
 
@@ -403,6 +415,7 @@ function showMenu() {
   renderMenu();
   renderTrack();
   updateBar();
+  updateLeave();
 }
 
 function loadVenue(id) {
@@ -425,7 +438,7 @@ function loadVenue(id) {
       ad = snap.data(); ad.id = adId;
       renderHero();
       if (!tableNo) renderTables(); else renderMenu();
-      updateBar();
+      updateBar(); updateLeave();
     });
     // QR طاولة: ?t=5 أو ?table=5
     var tp = 0;
@@ -478,23 +491,47 @@ function renderTrack() {
   if ($('done-track')) $('done-track').innerHTML = h;
 }
 
+/* ---- bill -> leave gating + farewell ---- */
+var DEF_FAREWELL = 'شكراً لزيارتكم 🌿 نتمنى كنا بمستوى ضيافتكم، وبانتظاركم مرة ثانية.';
+function billKey() { return 'mosl-bill-' + adId + '-' + tableNo; }
+function paidMark() { var p = (ad && ad.paidTables) || {}; return Number(p[tableNo]) || 0; }
+function billState() { try { return JSON.parse(localStorage.getItem(billKey()) || 'null'); } catch (e) { return null; } }
+function leaveUnlocked() { var b = billState(); return !!(b && paidMark() > (Number(b.base) || 0)); }
+function updateLeave() {
+  var b = billState(), ok = !!tableNo && leaveUnlocked();
+  Array.prototype.forEach.call(document.querySelectorAll('[data-leave]'), function (x) { x.disabled = !ok; });
+  var hint = !tableNo ? '' : ok ? 'تم تأكيد الدفع. تقدر تغادر.' : b ? 'الزر يتفعل بعد ما الصالة تأكد استلام الحساب.' : 'اطلب الحساب أولاً، وبعد الدفع يتفعل زر المغادرة.';
+  Array.prototype.forEach.call(document.querySelectorAll('.leavehint'), function (x) { x.textContent = hint; });
+}
+function showFarewell() {
+  try { localStorage.removeItem('chaychi-venue-tbl-' + adId); localStorage.removeItem(billKey()); } catch (e) {}
+  tableNo = 0; cart = {};
+  ['gate-table', 'menu', 'done', 'bar', 'sheet', 'steps'].forEach(function (i) { if ($(i)) $(i).hidden = true; });
+  $('vsub').textContent = '';
+  $('fw-text').textContent = ((ad && ad.farewell) || '').trim() || DEF_FAREWELL;
+  $('farewell').hidden = false;
+  try { window.scrollTo(0, 0); } catch (e) {}
+}
+
 /* ---- call waiter / bill ---- */
 function callStaff(type, msgEl) {
   var say = function (t) { msgEl.textContent = t; msgEl.hidden = false; clearTimeout(say._t); say._t = setTimeout(function () { msgEl.hidden = true; }, 4000); };
   if (IS_PREVIEW) { say('معاينة فقط — ما ينرسل نداء.'); return; }
   if (!adId || !tableNo) return;
+  if (type === 'leave' && !leaveUnlocked()) { say('اطلب الحساب أولاً، والزر يتفعل بعد تأكيد الدفع.'); updateLeave(); return; }
   var key = 'mosl-call-' + adId + '-' + type, now = Date.now(), last = 0;
   try { last = Number(localStorage.getItem(key)) || 0; } catch (e) {}
-  if (now - last < 120000) { say('نداؤك وصل، انتظر لحظات.'); return; }
+  if (type !== 'leave' && now - last < 120000) { say('نداؤك وصل، انتظر لحظات.'); return; }
   ensureAuth().then(function (u) {
     return db.collection('calls').doc(adId + '_' + tableNo + '_' + type).set({ adId: adId, tableNo: tableNo, type: type, open: true, createdAt: now, customerUid: u.uid });
   }).then(function () {
     try { localStorage.setItem(key, String(now)); } catch (e) {}
     if (window.MPush) MPush.notify('call', adId + '_' + tableNo + '_' + type);
-    if (type === 'leave') { try { localStorage.removeItem('chaychi-venue-tbl-' + adId); } catch (x) {} say('شكراً لزيارتك! نتمنى نشوفك قريباً 🌿'); }
-    else say(type === 'bill' ? 'وصل طلب الحساب للموظف.' : 'وصل ندائك للموظف.');
+    if (type === 'leave') { showFarewell(); return; }
+    if (type === 'bill') { try { localStorage.setItem(billKey(), JSON.stringify({ t: now, base: paidMark() })); } catch (x) {} updateLeave(); }
+    say(type === 'bill' ? 'وصل طلب الحساب للموظف.' : 'وصل ندائك للموظف.');
   }).catch(function (e) {
-    if (e && e.code === 'permission-denied') { try { localStorage.setItem(key, String(now)); } catch (x) {} say('نداؤك وصل وبانتظار الموظف.'); }
+    if (e && e.code === 'permission-denied') { try { localStorage.setItem(key, String(now)); } catch (x) {} if (type === 'leave') { showFarewell(); return; } if (type === 'bill') { try { localStorage.setItem(billKey(), JSON.stringify({ t: now, base: paidMark() })); } catch (y) {} updateLeave(); } say('نداؤك وصل وبانتظار الموظف.'); }
     else say('ما وصل النداء. تأكد من الإنترنت.');
   });
 }
@@ -539,7 +576,7 @@ $('btn-send').addEventListener('click', function () {
     cart = {}; $('sheet').hidden = true;
     $('menu').hidden = true; $('bar').hidden = true; $('done').hidden = false;
     $('done-tbl').textContent = ar(tableNo);
-    setStep(3); renderTrack();
+    setStep(3); renderTrack(); updateLeave();
     $('btn-send').disabled = false;
   }).catch(function (e) {
     $('btn-send').disabled = false;

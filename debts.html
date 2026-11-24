@@ -176,7 +176,7 @@ try {
 } catch (e) { fbOK = false; }
 
 function $(id) { return document.getElementById(id); }
-function esc(t) { return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) { return { '&': '&', '<': '<', '>': '>', '"': '"', "'": '&#39;' }[c]; }); }
+function esc(t) { return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 function ar(n) {
   var s = String(Math.round(Number(n) || 0));
   return s.replace(/\d/g, function (d) { return '٠١٢٣٤٥٦٧٨٩'[d]; });

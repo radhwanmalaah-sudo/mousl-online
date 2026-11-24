@@ -196,6 +196,10 @@ form.g { background: var(--surface); border: 1px solid var(--line); border-radiu
             <p class="note" style="margin:0">الصور تُقصّ وتُصغَّر تلقائياً للحجم المناسب، فلا تقلق من حجم الملف.</p>
             <p class="err" id="id-err" role="alert"></p>
             <button class="btn" type="button" data-act="save-hours">حفظ الدوام</button>
+            <div style="margin-top:10px"><label class="f" for="fw">رسالة الوداع للزبون (اختياري)</label>
+              <textarea class="in" id="fw" maxlength="200" rows="3" placeholder="إذا تركتها فاضية تظهر رسالة جاهزة. مثال: شكراً لزيارتكم، نورتونا 🌿"></textarea></div>
+            <p class="err" id="fw-err" role="alert"></p>
+            <button class="btn" type="button" data-act="save-farewell">حفظ رسالة الوداع</button>
             <label class="f" style="margin-top:10px;display:flex;align-items:center;gap:8px"><input type="checkbox" id="open-chk"> الصالة مفتوحة وتستقبل الطلبات</label>
           </div>
         </div>
@@ -605,6 +609,7 @@ function renderIdentity() {
   if ($('lg-prev')) { $('lg-prev').hidden = !lg; if (lg) $('lg-img').src = lg; }
   if ($('cv-prev')) { $('cv-prev').hidden = !cv; if (cv) $('cv-img').src = cv; }
   if ($('hrs') && document.activeElement !== $('hrs')) $('hrs').value = ad.hours || '';
+  if ($('fw') && document.activeElement !== $('fw')) $('fw').value = ad.farewell || '';
   if ($('open-chk')) $('open-chk').checked = ad.acceptOrders !== false;
 }
 function cropImage(file, W, H, maxLen, cb) {
@@ -781,7 +786,7 @@ function freeTable(tn) {
   if (open.length) msg += '\nفيها ' + ar(open.length) + ' طلب ما خلص، ينحسب منتهي.';
   if (!window.confirm(msg)) return;
   var now = Date.now(), b = db.batch();
-  var upd = {}; upd['tableFreed.' + tn] = now;
+  var upd = {}; upd['tableFreed.' + tn] = now; upd['paidTables.' + tn] = now;
   b.update(db.collection('ads').doc(adId), upd);
   open.forEach(function (o) {
     b.update(db.collection('orders').doc(o.id), { status: 'delivered', statusAt: now, open: false, deliveredAt: now });
@@ -790,6 +795,7 @@ function freeTable(tn) {
     b.update(db.collection('calls').doc(c.id), { open: false });
   });
   ad.tableFreed = ad.tableFreed || {}; ad.tableFreed[tn] = now;
+  ad.paidTables = ad.paidTables || {}; ad.paidTables[tn] = now;
   adCalls = adCalls.filter(function (c) { return Number(c.tableNo) !== tn; });
   renderTablesBoard(); renderCalls();
   b.commit().catch(function (e) { alert(e.message || 'ما انحفظ'); });
@@ -963,7 +969,7 @@ function renderCalls() {
     var mins = Math.max(0, Math.round((Date.now() - (c.createdAt || 0)) / 60000));
     return '<div class="card"><div class="row"><div><div class="shop" style="font-size:18px">طاولة ' + ar(c.tableNo) + '</div>' +
       '<div class="meta">' + (c.type === 'bill' ? '🧾 تطلب الحساب' : (c.type === 'leave' ? '🚪 خلصت ويغادر' : '🔔 تنادي الويتر')) + ' · قبل ' + ar(mins) + ' د</div></div>' +
-      (c.type === 'leave' ? '<button class="btn" data-act="free-tbl" data-t="' + esc(c.tableNo) + '">فرّغ الطاولة</button>' : '<button class="btn" data-act="call-done" data-id="' + esc(c.id) + '">تم</button>') + '</div></div>';
+      (c.type === 'leave' ? '<button class="btn" data-act="free-tbl" data-t="' + esc(c.tableNo) + '">فرّغ الطاولة</button>' : (c.type === 'bill' ? '<button class="btn" data-act="bill-paid" data-id="' + esc(c.id) + '" data-t="' + esc(c.tableNo) + '">تم الدفع ✓</button>' : '<button class="btn" data-act="call-done" data-id="' + esc(c.id) + '">تم</button>')) + '</div></div>';
   }).join('');
 }
 
@@ -1098,6 +1104,16 @@ document.addEventListener('click', function (e) {
   else if (a === 'o-done') setOrderStatus(t.dataset.id, 'delivered');
   else if (a === 'o-ready') setOrderStatus(t.dataset.id, 'ready');
   else if (a === 'free-tbl') freeTable(t.dataset.t);
+  else if (a === 'bill-paid') {
+    var tn = Number(t.dataset.t), nowP = Date.now(), bp = db.batch(), up = {};
+    up['paidTables.' + tn] = nowP;
+    bp.update(db.collection('ads').doc(adId), up);
+    bp.update(db.collection('calls').doc(t.dataset.id), { open: false });
+    ad.paidTables = ad.paidTables || {}; ad.paidTables[tn] = nowP;
+    adCalls = adCalls.filter(function (c) { return c.id !== t.dataset.id; }); renderCalls();
+    bp.commit().catch(function (e) { alert(e.message || 'ما انحفظ'); });
+  }
+  else if (a === 'save-farewell') db.collection('ads').doc(adId).update({ farewell: ($('fw').value || '').trim().slice(0, 200) }).then(function () { $('fw-err').textContent = ''; var b = t; b.textContent = 'تم الحفظ'; setTimeout(function () { b.textContent = 'حفظ رسالة الوداع'; }, 1500); }).catch(function (e) { $('fw-err').textContent = e.message || 'ما انحفظ'; });
   else if (a === 'call-done') db.collection('calls').doc(t.dataset.id).update({ open: false }).catch(function (e) { alert(e.message || 'ما انحفظ'); });
   else if (a === 'rm-logo') db.collection('ads').doc(adId).update({ logo: firebase.firestore.FieldValue.delete() }).catch(function (e) { $('id-err').textContent = e.message || 'ما انحفظ'; });
   else if (a === 'rm-cover') db.collection('ads').doc(adId).update({ cover: firebase.firestore.FieldValue.delete() }).catch(function (e) { $('id-err').textContent = e.message || 'ما انحفظ'; });
