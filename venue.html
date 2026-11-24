@@ -533,7 +533,7 @@ $('btn-send').addEventListener('click', function () {
       status: 'new', open: true, collectCalled: false,
       createdAt: now, statusAt: now, day: new Date().toISOString().slice(0, 10)
     };
-    return db.collection('orders').add(doc);
+    return window.MPush ? MPush.addOrder(doc) : db.collection('orders').add(doc);
   }).then(function (ref) {
     if (window.MPush && !IS_PREVIEW && ref) MPush.notify('order', ref.id);
     cart = {}; $('sheet').hidden = true;
@@ -543,7 +543,7 @@ $('btn-send').addEventListener('click', function () {
     $('btn-send').disabled = false;
   }).catch(function (e) {
     $('btn-send').disabled = false;
-    $('err').textContent = (e && e.message) || 'ما انرسل الطلب. حاول مرة ثانية.';
+    $('err').textContent = (e && e.code === 'rate-limit') ? 'لحظات! إذا أرسلت طلباً قبل قليل، انتظر ٢٠ ثانية وجرّب مرة ثانية.' : ((e && e.message) || 'ما انرسل الطلب. حاول مرة ثانية.');
   });
 });
 

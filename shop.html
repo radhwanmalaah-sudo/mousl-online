@@ -242,7 +242,9 @@ form.g { background: var(--surface); border: 1px solid var(--line); border-radiu
         <div id="pricebox"><label class="f" for="iprice">السعر</label>
           <input class="in" id="iprice" type="text" inputmode="numeric" maxlength="12" pattern="[0-9٠-٩.]*" placeholder="مثال: 120000"></div>
         <div><label class="f" for="idesc">وصف مختصر (اختياري)</label>
-          <input class="in" id="idesc" maxlength="80" placeholder="جملة قصيرة"></div>
+          <input class="in" id="idesc" maxlength="80" placeholder="جملة قصيرة">
+          <button type="button" class="btn-line" id="ai-desc" data-act="ai-desc" style="margin-top:6px">✨ اقترح وصف بالذكاء الصناعي</button>
+          <p class="note" id="ai-msg" style="margin:4px 0 0;font-size:12px"></p></div>
         <div><label class="f" for="icat">القسم (اختياري)</label>
           <input class="in" id="icat" maxlength="20" list="catlist" placeholder="مثال: ساخن، بارد، شيشة، حلويات" autocomplete="off">
           <datalist id="catlist"></datalist></div>
@@ -255,6 +257,7 @@ form.g { background: var(--surface); border: 1px solid var(--line); border-radiu
         <p class="note" style="margin:0;font-size:12px;color:var(--ink-2)">ارفع الصورة على imgbb.com أو أي موقع، وانسخ الرابط والصقه هنا.</p>
         <p class="err" id="ierr" role="alert"></p>
         <button class="btn" type="submit" id="f-item-btn">أضف</button>
+        <button class="btn-line" type="button" id="f-item-cancel" data-act="cancel-edit" hidden>إلغاء التعديل</button>
       </form>
     </div>
   </section>
@@ -496,10 +499,10 @@ function renderItems() {
   var venue = isVenue();
   var lab = venue ? 'قائمتك ' : (sales ? 'منتجاتك ' : 'خدماتك ');
   $('list-title').innerHTML = lab + '<span id="icnt">' + (items.length ? '(' + ar(items.length) + ')' : '') + '</span>';
-  $('form-title').textContent = venue ? 'أضف صنف' : (sales ? 'أضف منتج' : 'أضف خدمة');
+  if (editIdx < 0) $('form-title').textContent = venue ? 'أضف صنف' : (sales ? 'أضف منتج' : 'أضف خدمة');
   $('iname-lab').textContent = venue ? 'اسم الصنف' : (sales ? 'اسم المنتج' : 'اسم الخدمة');
   $('iname').placeholder = venue ? 'مثال: شاي، شيشة، بركر' : (sales ? 'مثال: تليفون، طباعة، كيس رز' : 'مثال: تصميم مخططات، صيانة مكيفات');
-  $('f-item-btn').textContent = venue ? 'أضف للقائمة' : (sales ? 'أضف المنتج' : 'أضف الخدمة');
+  $('f-item-btn').textContent = editIdx >= 0 ? 'احفظ التعديل' : (venue ? 'أضف للقائمة' : (sales ? 'أضف المنتج' : 'أضف الخدمة'));
   $('pricebox').hidden = !sales || (ad.currency || 'none') === 'none';
   if (!items.length) {
     $('ilist').innerHTML = '<div class="empty">' + (sales ? 'ماكو منتجات بعد. أضف أول منتج من الفورم تحت.' : 'ماكو خدمات بعد. أضف أول خدمة من الفورم تحت.') + '</div>';
@@ -515,11 +518,52 @@ function renderItems() {
       (it.img ? '<img src="' + esc(it.img) + '" alt="" style="width:48px;height:48px;object-fit:cover;border-radius:8px;margin-left:8px">' : '') +
       (sales && it.price != null && it.price !== '' && cur !== 'none' ? '<span class="price">' + esc(money(it.price, cur)) + '</span>' : '<span class="pill">' + (sales ? 'منتج' : 'خدمة') + '</span>') +
       '</div>' + (it.desc ? '<div class="meta">' + esc(it.desc) + '</div>' : '') +
-      '</div><button class="btn-line danger" data-act="delitem" data-i="' + i + '">احذف</button></div></div>';
+      '</div><div class="btns" style="flex-direction:column;gap:6px"><button class="btn-line" data-act="edititem" data-i="' + i + '">عدّل</button><button class="btn-line danger" data-act="delitem" data-i="' + i + '">احذف</button></div></div></div>';
   }).join('');
 }
 
+function aiDesc(btn) {
+  var msg = $('ai-msg'), name = ($('iname').value || '').trim();
+  if (!name) { msg.textContent = 'اكتب الاسم أول، وبعدها اضغط.'; return; }
+  if (!window.MPush) { msg.textContent = 'الميزة مو متوفرة هسه.'; return; }
+  var old = btn.textContent; btn.disabled = true; btn.textContent = 'دا يكتب...'; msg.textContent = '';
+  MPush.ai({ adId: adId, name: name, cat: ($('icat').value || '').trim(), kind: isVenue() ? 'venue' : (isSales() ? 'sale' : 'service') })
+    .then(function (t) { $('idesc').value = t; msg.textContent = 'عدّل الوصف إذا تريد، وبعدها احفظ.'; })
+    .catch(function (x) {
+      var c = x && x.e;
+      msg.textContent = c === 'limit' ? 'خلص حدك اليومي. جرّب باچر.' : (c === 'ai-not-configured' ? 'الذكاء الصناعي مو مفعّل بعد.' : 'ما كدرت أكتب. جرّب مرة ثانية.');
+    }).then(function () { btn.disabled = false; btn.textContent = old; });
+}
 var pendingImg = '';
+var editIdx = -1;
+function exitEdit() {
+  editIdx = -1;
+  clearPendingImg();
+  ['iname', 'iprice', 'idesc', 'icat', 'iimg'].forEach(function (k) { if ($(k)) $(k).value = ''; });
+  $('ierr').textContent = '';
+  if ($('f-item-cancel')) $('f-item-cancel').hidden = true;
+  renderItems();
+}
+function startEdit(i) {
+  var it = ((ad && ad.items) || [])[i];
+  if (!it) return;
+  editIdx = i;
+  clearPendingImg();
+  $('iname').value = it.name || '';
+  $('iprice').value = (it.price != null && it.price !== '') ? String(it.price) : '';
+  $('idesc').value = it.desc || '';
+  $('icat').value = it.cat || '';
+  $('iimg').value = '';
+  if (it.img) {
+    if (/^data:image\//.test(it.img)) { pendingImg = it.img; $('iprevimg').src = it.img; $('iprev').hidden = false; }
+    else $('iimg').value = it.img;
+  }
+  $('ierr').textContent = '';
+  $('f-item-btn').textContent = 'احفظ التعديل';
+  $('form-title').textContent = 'تعديل: ' + (it.name || '');
+  $('f-item-cancel').hidden = false;
+  $('f-item').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
 function clearPendingImg() { pendingImg = ''; if ($('ifile')) $('ifile').value = ''; if ($('iprev')) $('iprev').hidden = true; }
 function shrinkImage(file, cb) {
   var rd = new FileReader();
@@ -991,6 +1035,7 @@ $('f-item').addEventListener('submit', function (e) {
   else if (sales && cur !== 'none' && priceRaw === '') err = 'اكتب السعر أو غيّر العملة إلى بلا.';
   $('ierr').textContent = err;
   if (err) return;
+  var prev = editIdx >= 0 ? ((ad.items || [])[editIdx] || null) : null;
   var item = { name: name, type: type, desc: desc || '' };
   if (sales && cur !== 'none' && priceRaw !== '') {
     var p = parsePrice(priceRaw);
@@ -1006,13 +1051,14 @@ $('f-item').addEventListener('submit', function (e) {
   var catV = ($('icat') && $('icat').value.trim()) || '';
   if (catV) item.cat = catV.slice(0, 20);
   var items = (ad.items || []).slice();
-  items.push(item);
+  if (prev && editIdx < items.length) items[editIdx] = item; else items.push(item);
   if (JSON.stringify(items).length > 780000) { $('ierr').textContent = 'القائمة وصلت الحد الأقصى للحجم. احذف صور قديمة أو استخدم رابط صورة.'; return; }
   db.collection('ads').doc(adId).update({ items: items }).then(function () {
     clearPendingImg();
     $('iname').value = ''; $('iprice').value = ''; $('idesc').value = '';
     if ($('iimg')) $('iimg').value = '';
     $('ierr').textContent = '';
+    if (editIdx >= 0) exitEdit();
   }).catch(function (e) { $('ierr').textContent = e.message || 'ما انحفظ.'; });
 });
 
@@ -1035,10 +1081,14 @@ document.addEventListener('click', function (e) {
   } else if (a === 'cur' && adId) {
     var v = t.dataset.v;
     db.collection('ads').doc(adId).update({ currency: v }).catch(function () {});
+  } else if (a === 'ai-desc') { aiDesc(t); return;
+  } else if (a === 'edititem') { startEdit(Number(t.dataset.i)); return;
+  } else if (a === 'cancel-edit') { exitEdit(); return;
   } else if (a === 'delitem' && adId) {
     var i = Number(t.dataset.i);
     var items = (ad.items || []).slice();
     if (i >= 0 && i < items.length) {
+      if (editIdx >= 0) exitEdit();
       items.splice(i, 1);
       db.collection('ads').doc(adId).update({ items: items }).catch(function () {});
     }

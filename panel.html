@@ -162,6 +162,7 @@ textarea.in { resize: vertical; min-height: 64px; }
     <p class="err" id="lerr" role="alert"></p>
   </section>
   <div id="papp" hidden>
+  <div id="push-slot"></div>
 
   <nav class="ptabs" aria-label="الأقسام">
     <button data-act="tab" data-tab="ads" aria-pressed="true">الإعلانات</button>
@@ -259,6 +260,8 @@ textarea.in { resize: vertical; min-height: 64px; }
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js"></script>
+<script src="push.js"></script>
 <div id="pvov" hidden style="position:fixed;inset:0;z-index:80;background:var(--bg);display:flex;flex-direction:column">
   <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);background:var(--surface)">
     <button class="btn" data-act="pvclose" type="button" style="width:auto;padding:8px 16px">خروج من المعاينة</button>
@@ -957,6 +960,7 @@ function showApp(user) {
   $('who').textContent = user.email || 'صاحب التطبيق';
   showErr('');
   listenAll();
+  try { if (window.MPush) MPush.mount({ slot: 'push-slot', admin: true, docId: '_admin', label: '🔔 فعّل إشعارات الإدارة (انضمام + انتهاء إعلان)' }); } catch (e) {}
 }
 function denied() {
   stopListening();

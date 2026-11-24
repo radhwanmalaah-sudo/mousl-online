@@ -7,6 +7,28 @@
   P.supported = function () {
     try { return 'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window && window.firebase && firebase.messaging && firebase.messaging.isSupported(); } catch (e) { return false; }
   };
+  // إضافة طلب مع حد إرسال (طلب واحد كل ٢٠ ثانية للجهاز) — القواعد تفرضه عبر مستند rates
+  P.addOrder = function (doc) {
+    var db = firebase.firestore(), ref = db.collection('orders').doc();
+    var b = db.batch();
+    b.set(db.collection('rates').doc(doc.customerUid), { last: firebase.firestore.FieldValue.serverTimestamp() });
+    b.set(ref, doc);
+    return b.commit().then(function () { return ref; }).catch(function (e) {
+      // توافق مع القواعد القديمة (قبل نشر القواعد الجديدة)
+      if (e && e.code === 'permission-denied') return db.collection('orders').add(doc).catch(function (e2) { if (e2 && e2.code === 'permission-denied') e2.code = 'rate-limit'; throw e2; });
+      throw e;
+    });
+  };
+  // ذكاء صناعي: اقتراح وصف منتج (يتطلب تسجيل دخول صاحب الإعلان)
+  P.ai = function (payload) {
+    var u = firebase.auth().currentUser;
+    if (!u) return Promise.reject({ e: 'auth' });
+    return u.getIdToken().then(function (t) {
+      payload.idToken = t;
+      return fetch(WORKER + '/ai', { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
+    }).then(function (r) { return r.json().catch(function () { return { ok: false, e: 'bad' }; }); })
+      .then(function (j) { if (!j || !j.ok) throw (j || { e: 'bad' }); return j.text; });
+  };
   // يطلب من الـ Worker يرسل إشعاراً (للطلبات والنداءات). فشله ما يأثر على التطبيق.
   P.notify = function (kind, id) {
     try {
@@ -15,8 +37,10 @@
     } catch (e) {}
   };
 
+  var cfg = { docId: '', admin: false };
   function getUser() {
     var a = firebase.auth();
+    if (cfg.admin) return a.currentUser && !a.currentUser.isAnonymous ? Promise.resolve(a.currentUser) : Promise.reject(new Error('not-admin'));
     if (a.currentUser) return Promise.resolve(a.currentUser);
     return new Promise(function (res) {
       var un = a.onAuthStateChanged(function (u) { un(); res(u); });
@@ -28,9 +52,10 @@
     }).then(function (tok) {
       if (!tok) throw new Error('no-token');
       return getUser().then(function (u) {
-        var key = 'mpush-tok-' + u.uid, last = ''; try { last = localStorage.getItem(key) || ''; } catch (e) {}
+        var did = cfg.docId || u.uid;
+        var key = 'mpush-tok-' + did, last = ''; try { last = localStorage.getItem(key) || ''; } catch (e) {}
         if (last === tok) return tok;
-        return firebase.firestore().collection('pushTokens').doc(u.uid).set({ uid: u.uid, token: tok, updatedAt: Date.now() }).then(function () {
+        return firebase.firestore().collection('pushTokens').doc(did).set({ uid: u.uid, token: tok, updatedAt: Date.now() }).then(function () {
           try { localStorage.setItem(key, tok); } catch (e) {} return tok;
         });
       });
@@ -45,6 +70,7 @@
   // opts: { slot: id of element, label: نص الزر, skip: true بوضع المعاينة }
   P.mount = function (opts) {
     opts = opts || {};
+    cfg.docId = opts.docId || ''; cfg.admin = !!opts.admin;
     var el = document.getElementById(opts.slot || 'push-slot');
     if (!el || opts.skip) return;
     function draw(state, msg) {

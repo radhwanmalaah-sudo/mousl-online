@@ -945,9 +945,10 @@ $('f-join').addEventListener('submit', function (e) {
   $('e-join').textContent = err;
   if (err) return;
   ensureAuth().then(function () {
-    return db.collection('joinRequests').add({ uid: myUid, name: name, phone: phone, zone: $('j-zone').value, drinks: drinks, status: 'pending', createdAt: now() });
+    return db.collection('joinRequests').doc(myUid).set({ uid: myUid, name: name, phone: phone, zone: $('j-zone').value, drinks: drinks, status: 'pending', createdAt: now() });
   }).then(function (ref) {
-    myJoin = ref.id;
+    myJoin = myUid;
+    if (window.MPush) MPush.notify('join', myUid);
     try { localStorage.setItem('chaychi-join', myJoin); } catch (x) {}
     watchJoin();
   }).catch(function (x) { $('e-join').textContent = errText(x); });

@@ -338,6 +338,7 @@ function showErr(msg) {
 }
 function errText(e) {
   var c = e && e.code || '';
+  if (c === 'rate-limit') return 'لحظات! إذا أرسلت طلباً قبل قليل، انتظر ٢٠ ثانية وجرّب مرة ثانية.';
   if (c === 'permission-denied') return 'ما عندك صلاحية لهذا الإجراء.';
   if (c === 'unavailable' || c === 'failed-precondition' && /offline/.test(e.message || '')) return 'ماكو اتصال بالإنترنت. جرّب مرة ثانية.';
   if (c === 'auth/operation-not-allowed' || c === 'auth/admin-restricted-operation') return 'تسجيل الدخول المجهول مو مفعّل بـ Firebase.';
@@ -796,7 +797,7 @@ function sendAdOrder(adId) {
     return db.collection('blocked').doc(phone).get();
   }).then(function (b) {
     if (b.exists) { blockedSelf = true; throw { code: 'blocked' }; }
-    return db.collection('orders').add(doc);
+    return window.MPush ? MPush.addOrder(doc) : db.collection('orders').add(doc);
   }).then(function (ref) {
     orderId = ref.id; lastStage = null; adCart = {};
     if (window.MPush && !PVIEW) MPush.notify('order', ref.id);
@@ -968,7 +969,7 @@ function sendOrder() {
     var chk = phone ? db.collection('blocked').doc(phone).get() : Promise.resolve({ exists: false });
     return chk.then(function (b) {
       if (b.exists) { blockedSelf = true; throw { code: 'blocked' }; }
-      return db.collection('orders').add(doc);
+      return window.MPush ? MPush.addOrder(doc) : db.collection('orders').add(doc);
     });
   }).then(function (ref) {
     orderId = ref.id; lastStage = null;
