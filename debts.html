@@ -24,6 +24,25 @@
     --line: #2A3A37; --tea: #E5755A; --tea-ink: #1A0A06; --ok: #5CD0C0; --ok-bg: #12352F; color-scheme: dark; }
 }
 * { box-sizing: border-box; }
+.offbar { background: #3A2D10; color: #FFE7AE; border-radius: 12px; padding: 8px 12px; margin-bottom: 10px; font-size: 13px; }
+.bkwarn { background: #FFF1DC; color: #7A4A00; border: 1px solid #F1D3A1; border-radius: 14px; padding: 10px 12px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 14px; }
+.bkwarn button { font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 10px; border: 1px solid currentColor; background: transparent; color: inherit; }
+.bkbox { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 12px; display: grid; gap: 8px; }
+.bkbox .btns { display: grid; grid-template-columns: 1fr; gap: 8px; }
+.bkbox .btn-line { width: 100%; }
+#print-root { display: none; }
+@media print {
+  body > *:not(#print-root) { display: none !important; }
+  body { background: #fff !important; color: #000 !important; padding: 0 !important; }
+  #print-root { display: block !important; direction: rtl; font-family: var(--font-body); color: #000; font-size: 12px; }
+  #print-root h1 { font-size: 20px; margin: 0 0 4px; }
+  #print-root h2 { font-size: 14px; margin: 16px 0 6px; color: #000; letter-spacing: 0; }
+  #print-root table { width: 100%; border-collapse: collapse; }
+  #print-root th, #print-root td { border: 1px solid #999; padding: 4px 6px; text-align: right; }
+  #print-root th { background: #eee; }
+  #print-root tr { break-inside: avoid; }
+  #print-root .sum { display: flex; gap: 16px; flex-wrap: wrap; margin: 8px 0; }
+}
 body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.6;
   padding: 0 max(16px, env(safe-area-inset-right)) 40px max(16px, env(safe-area-inset-left)); }
 button, input, select, textarea { font: inherit; color: inherit; }
@@ -77,6 +96,7 @@ h2 { font-size: 13px; font-weight: 600; letter-spacing: 0.04em; color: var(--ink
   </section>
 
   <section id="app" hidden>
+    <div class="offbar" id="off-bar" role="status" hidden></div>
     <div class="card">
       <div class="shop" id="shopname"></div>
       <div class="meta" id="shopmeta"></div>
@@ -105,6 +125,7 @@ h2 { font-size: 13px; font-weight: 600; letter-spacing: 0.04em; color: var(--ink
         <div class="rep-item"><span class="l">نقدي مقبوض</span><b id="sum-cash">٠</b></div>
         <div class="rep-item"><span class="l">بطاقة مقبوض</span><b id="sum-card">٠</b></div>
       </div>
+      <div class="bkwarn" id="bk-warn" hidden><span id="bk-warn-t"></span><button type="button" data-act="export-csv">صدّر نسخة الآن</button></div>
       <input class="in" id="q" placeholder="بحث بالاسم أو الرقم" style="margin-bottom:10px">
       <div id="dlist"></div>
     </div>
@@ -140,6 +161,17 @@ h2 { font-size: 13px; font-weight: 600; letter-spacing: 0.04em; color: var(--ink
         <div class="rep-item"><span class="l">نقدي (الكل)</span><b id="rep-cash-all">٠</b></div>
         <div class="rep-item"><span class="l">بطاقة (الكل)</span><b id="rep-card-all">٠</b></div>
       </div>
+      <h2>نسخة احتياطية</h2>
+      <div class="bkbox">
+        <p class="note" style="margin:0">حمّل نسخة من كل الديون (المدينين مع كل الحركات) واحتفظ بها على جهازك. تفتح بـExcel.</p>
+        <div class="btns">
+          <button type="button" class="btn" data-act="export-csv">📥 تصدير Excel / CSV</button>
+          <button type="button" class="btn-line" data-act="share-csv">📤 مشاركة الملف (واتساب...)</button>
+          <button type="button" class="btn-line" data-act="print-rep">🖨️ طباعة تقرير</button>
+        </div>
+        <p class="note" id="bk-last" style="margin:0"></p>
+        <p class="err" id="bk-err" role="alert"></p>
+      </div>
       <h2>آخر التسديدات</h2>
       <div id="pay-log"></div>
       <p class="note" id="rep-note"></p>
@@ -162,21 +194,23 @@ h2 { font-size: 13px; font-weight: 600; letter-spacing: 0.04em; color: var(--ink
   </section>
 </div>
 
+<div id="print-root" aria-hidden="true"></div>
+
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="helpers.js"></script>
 <script>
-var FBCONFIG = { apiKey: 'AIzaSyDT27G2lUpfUPcAMvRIPkllY3bzbQv87Eg', authDomain: 'chaychi-61eaf.firebaseapp.com', projectId: 'chaychi-61eaf', storageBucket: 'chaychi-61eaf.firebasestorage.app', messagingSenderId: '669532553284', appId: '1:669532553284:web:b999af1fc4824c7affbc11' };
 var auth, db, fbOK = false;
 try {
   firebase.initializeApp(FBCONFIG);
   auth = firebase.auth();
   db = firebase.firestore();
+  try { db.enablePersistence({ synchronizeTabs: true }).catch(function () {}); } catch (pe) {}
   fbOK = true;
 } catch (e) { fbOK = false; }
 
-function $(id) { return document.getElementById(id); }
-function esc(t) { return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 function ar(n) {
   var s = String(Math.round(Number(n) || 0));
   return s.replace(/\d/g, function (d) { return '٠١٢٣٤٥٦٧٨٩'[d]; });
@@ -187,11 +221,6 @@ function parseNum(s) {
   if (!w || w === '.') return NaN;
   var n = Number(w);
   return isFinite(n) ? Math.round(n * 100) / 100 : NaN;
-}
-function normCode(c) { return String(c || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, ''); }
-function dayKey(ts) {
-  var d = ts ? new Date(ts) : new Date();
-  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 }
 function money(n, cur) {
   if (n == null) return ar(0);
@@ -214,10 +243,6 @@ window.addEventListener('beforeinstallprompt', function (e) {
   var box = $('instbox'); if (box) box.hidden = false;
   var msg = $('instmsg'); if (msg) msg.textContent = 'اضغط الزر لتثبيت الصفحة كتطبيق.';
 });
-function isStandalone() {
-  try { return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true; }
-  catch (e) { return false; }
-}
 function installApp(msgEl) {
   if (deferredInstall) {
     deferredInstall.prompt();
@@ -255,6 +280,7 @@ function renderAll() {
   $('shopmeta').textContent = 'دفتر ديوني' + (ad.phone ? ' · ' + ad.phone : '');
   renderList();
   renderReport();
+  renderBackupInfo();
 }
 
 function remaining(d) { return Math.max(0, (Number(d.amount) || 0) - (Number(d.paid) || 0)); }
@@ -347,10 +373,136 @@ function renderReport() {
   if ($('rep-note')) $('rep-note').textContent = 'التقرير يجمع كل التسديدات المسجّلة (نقدي وبطاقة).';
 }
 
+/* ---------- نسخة احتياطية: CSV + طباعة ---------- */
+var BK_DAYS = 7;
+function bkKey() { return 'mousl-debts-bk-' + (adId || ''); }
+function bkGet() { try { return Number(localStorage.getItem(bkKey())) || 0; } catch (e) { return 0; } }
+function bkSet() { try { localStorage.setItem(bkKey(), String(Date.now())); } catch (e) {} renderBackupInfo(); }
+function renderBackupInfo() {
+  var last = bkGet(), now = Date.now();
+  var days = last ? Math.floor((now - last) / 86400000) : -1;
+  var lastEl = $('bk-last');
+  if (lastEl) lastEl.textContent = last ? 'آخر نسخة: ' + new Date(last).toLocaleDateString('ar-IQ') + (days > 0 ? ' (قبل ' + ar(days) + ' يوم)' : ' (اليوم)') : 'ما صدّرت نسخة من هذا الجهاز بعد.';
+  var w = $('bk-warn');
+  if (!w || PV) return;
+  var need = debts.length > 0 && (!last || days >= BK_DAYS);
+  w.hidden = !need;
+  if (need) $('bk-warn-t').textContent = last ? '⚠️ آخر نسخة احتياطية قبل ' + ar(days) + ' يوم.' : '⚠️ ما عندك نسخة احتياطية من ديونك.';
+}
+function z2(n) { return (n < 10 ? '0' : '') + n; }
+function fmtDate(ts) { var d = new Date(ts); if (isNaN(d)) return ''; return d.getFullYear() + '-' + z2(d.getMonth() + 1) + '-' + z2(d.getDate()); }
+function fmtDateTime(ts) { var d = new Date(ts); if (isNaN(d)) return ''; return fmtDate(ts) + ' ' + z2(d.getHours()) + ':' + z2(d.getMinutes()); }
+// يجيب كل الديون (بدون حد 200). إذا فشل (مثلاً بدون نت) يرجع للمحمّل بالصفحة.
+function fetchAllDebts() {
+  return db.collection('debts').where('adId', '==', adId).get().then(function (s) {
+    return s.docs.map(function (x) { var d = x.data(); d.id = x.id; return d; });
+  }).catch(function () { return debts.slice(); });
+}
+function bkRows(list) {
+  var summary = [], moves = [];
+  list.sort(function (a, b) { return (a.createdAt || 0) - (b.createdAt || 0); });
+  list.forEach(function (d) {
+    var amt = Number(d.amount) || 0, paid = Number(d.paid) || 0, rem = Math.max(0, amt - paid);
+    var dt = d.date || (d.createdAt ? fmtDate(d.createdAt) : '');
+    summary.push({ name: d.name || '', phone: d.phone || '', item: d.item || '', amount: amt, paid: paid, rem: rem, status: d.status === 'paid' ? 'مسدّد' : 'مفتوح', date: dt, cost: Number(d.cost) || 0, note: d.note || '' });
+    moves.push({ name: d.name || '', phone: d.phone || '', item: d.item || '', kind: 'دين', amount: amt, method: '', date: dt, note: d.note || '' });
+    var pays = Array.isArray(d.payments) ? d.payments : [], sum = 0;
+    pays.forEach(function (p) {
+      var a = Number(p.amount) || 0; sum += a;
+      moves.push({ name: d.name || '', phone: d.phone || '', item: d.item || '', kind: 'تسديد', amount: a, method: p.method === 'electronic' ? 'إلكتروني' : 'نقدي', date: p.at ? fmtDateTime(p.at) : '', note: '' });
+    });
+    if (paid - sum > 0.01) moves.push({ name: d.name || '', phone: d.phone || '', item: d.item || '', kind: 'تسديد', amount: paid - sum, method: '', date: '', note: 'تسديدات أقدم بدون تفاصيل' });
+  });
+  return { summary: summary, moves: moves };
+}
+function csvCell(v, isText) {
+  var t = v == null ? '' : String(v);
+  if (isText && /^[=+\-@\t\r]/.test(t)) t = "'" + t;
+  if (/[",\n\r]/.test(t)) t = '"' + t.replace(/"/g, '""') + '"';
+  return t;
+}
+function csvLine(arr, mask) { return arr.map(function (v, i) { return csvCell(v, mask ? mask[i] : false); }).join(','); }
+function buildCsv(r) {
+  var cur = (ad && ad.currency) === 'usd' ? 'دولار' : 'دينار';
+  var L = [];
+  L.push(csvLine(['نسخة احتياطية - دفتر الديون', (ad && ad.shop) || '', 'التاريخ', fmtDateTime(Date.now()), 'العملة', cur], [1, 1, 1, 1, 1, 1]));
+  L.push('');
+  L.push(csvLine(['== ملخص المدينين ==']));
+  L.push(csvLine(['الاسم', 'الجوال', 'المادة', 'سعر البيع', 'المسدّد', 'المتبقي', 'الحالة', 'التاريخ', 'الكلفة', 'ملاحظة']));
+  var tA = 0, tP = 0, tR = 0;
+  r.summary.forEach(function (x) {
+    tA += x.amount; tP += x.paid; tR += x.rem;
+    L.push(csvLine([x.name, x.phone, x.item, x.amount, x.paid, x.rem, x.status, x.date, x.cost, x.note], [1, 1, 1, 0, 0, 0, 0, 0, 0, 1]));
+  });
+  L.push(csvLine(['المجموع', '', '', tA, tP, tR]));
+  L.push('');
+  L.push(csvLine(['== الحركات التفصيلية (دين وتسديد) ==']));
+  L.push(csvLine(['الاسم', 'الجوال', 'المادة', 'النوع', 'المبلغ', 'طريقة الدفع', 'التاريخ', 'ملاحظة']));
+  r.moves.forEach(function (m) { L.push(csvLine([m.name, m.phone, m.item, m.kind, m.amount, m.method, m.date, m.note], [1, 1, 1, 0, 0, 0, 0, 1])); });
+  return '\ufeff' + L.join('\r\n');
+}
+function csvName() { return 'debts-' + fmtDate(Date.now()) + '.csv'; }
+function bkErr(t) { if ($('bk-err')) $('bk-err').textContent = t || ''; }
+function downloadBlob(blob) {
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = csvName();
+  document.body.appendChild(a); a.click();
+  setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+  bkSet();
+}
+function doExport(mode) {
+  if (PV || !adId) return;
+  bkErr('');
+  fetchAllDebts().then(function (list) {
+    if (!list.length) { bkErr('ماكو ديون حتى تنصدّر.'); return; }
+    var blob = new Blob([buildCsv(bkRows(list))], { type: 'text/csv;charset=utf-8' });
+    if (mode === 'share') {
+      var file = null;
+      try { file = new File([blob], csvName(), { type: 'text/csv' }); } catch (e) {}
+      if (file && navigator.canShare && navigator.share && navigator.canShare({ files: [file] })) {
+        return navigator.share({ files: [file], title: 'نسخة احتياطية - دفتر الديون' }).then(bkSet).catch(function (e) { if (!e || e.name !== 'AbortError') bkErr('ما كدرت أشارك. جرّب التصدير.'); });
+      }
+      bkErr('المشاركة مو مدعومة بهذا المتصفح، نزّلت الملف. أرسله يدوياً.');
+    }
+    downloadBlob(blob);
+  });
+}
+function doPrint() {
+  if (PV || !adId) return;
+  bkErr('');
+  fetchAllDebts().then(function (list) {
+    if (!list.length) { bkErr('ماكو ديون حتى تنطبع.'); return; }
+    var r = bkRows(list), cur = (ad && ad.currency) || 'iqd';
+    var tA = 0, tP = 0, tR = 0, openN = 0;
+    r.summary.forEach(function (x) { tA += x.amount; tP += x.paid; tR += x.rem; if (x.status === 'مفتوح') openN++; });
+    var h = '<h1>' + esc((ad && ad.shop) || 'دفتر الديون') + ' — دفتر الديون</h1><div>تاريخ التقرير: ' + esc(fmtDateTime(Date.now())) + '</div>' +
+      '<div class="sum"><span>عدد المدينين: <b>' + ar(r.summary.length) + '</b></span><span>مفتوح: <b>' + ar(openN) + '</b></span><span>إجمالي البيع: <b>' + money(tA, cur) + '</b></span><span>المسدّد: <b>' + money(tP, cur) + '</b></span><span>المتبقي: <b>' + money(tR, cur) + '</b></span></div>' +
+      '<h2>المدينون</h2><table><tr><th>الاسم</th><th>الجوال</th><th>المادة</th><th>السعر</th><th>المسدّد</th><th>المتبقي</th><th>الحالة</th><th>التاريخ</th></tr>' +
+      r.summary.map(function (x) { return '<tr><td>' + esc(x.name) + '</td><td>' + esc(x.phone) + '</td><td>' + esc(x.item) + '</td><td>' + money(x.amount, cur) + '</td><td>' + money(x.paid, cur) + '</td><td>' + money(x.rem, cur) + '</td><td>' + esc(x.status) + '</td><td>' + esc(x.date) + '</td></tr>'; }).join('') +
+      '</table><h2>الحركات التفصيلية</h2><table><tr><th>الاسم</th><th>المادة</th><th>النوع</th><th>المبلغ</th><th>الطريقة</th><th>التاريخ</th><th>ملاحظة</th></tr>' +
+      r.moves.map(function (m) { return '<tr><td>' + esc(m.name) + '</td><td>' + esc(m.item) + '</td><td>' + esc(m.kind) + '</td><td>' + money(m.amount, cur) + '</td><td>' + esc(m.method) + '</td><td>' + esc(m.date) + '</td><td>' + esc(m.note) + '</td></tr>'; }).join('') + '</table>';
+    $('print-root').innerHTML = h;
+    setTimeout(function () { window.print(); }, 150);
+  });
+}
+
+/* ---------- حالة الاتصال (بدون نت) ---------- */
+var pendingW = false;
+function renderOff() {
+  var b = $('off-bar'); if (!b) return;
+  var off = navigator.onLine === false;
+  if (off) { b.hidden = false; b.textContent = '📡 ما كو إنترنت. تكدر تشتغل عادي، والتعديلات تنحفظ بجهازك وتنرفع لما يرجع النت.'; }
+  else if (pendingW) { b.hidden = false; b.textContent = '⏳ دا ترفع تعديلات محفوظة بالجهاز...'; }
+  else b.hidden = true;
+}
+window.addEventListener('online', renderOff);
+window.addEventListener('offline', renderOff);
+
 function listenDebts(id) {
   if (unsubDebts) { unsubDebts(); unsubDebts = null; }
   unsubDebts = db.collection('debts').where('adId', '==', id).orderBy('createdAt', 'desc').limit(200)
-    .onSnapshot(function (snap) {
+    .onSnapshot({ includeMetadataChanges: true }, function (snap) {
+      pendingW = snap.metadata.hasPendingWrites; renderOff();
       debts = snap.docs.map(function (d) { var x = d.data(); x.id = d.id; return x; });
       renderAll();
     }, function (e) {
@@ -396,11 +548,14 @@ function loginWith(code) {
         return db.collection('ads').doc(aid).get();
       }).then(function (ds) {
         if (!ds.exists) { $('lerr').textContent = 'الإعلان محذوف.'; return null; }
-        try { localStorage.setItem('mousl-debts-code', c); } catch (e) {}
+        try { localStorage.setItem('mousl-debts-code', c); localStorage.setItem('mousl-debts-ad-' + c, JSON.stringify({ aid: aid, data: { shop: ds.data().shop || '', currency: ds.data().currency || 'iqd' } })); } catch (e) {}
         openApp(aid, ds.data());
       });
     });
   }).catch(function (e) {
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem('mousl-debts-ad-' + c) || 'null'); } catch (x) {}
+    if (cached && cached.aid && e && (e.code === 'unavailable' || navigator.onLine === false || /network|offline|firebase/i.test(String(e.message || '')))) { openApp(cached.aid, cached.data); return; }
     $('lerr').textContent = (e && e.code === 'permission-denied') ? 'الكود غير صحيح.' : (e.message || 'خطأ في الدخول');
   });
 }
@@ -437,12 +592,11 @@ $('f-add').addEventListener('submit', function (e) {
       date: date,
       note: note,
       updatedAt: now
-    }).then(function () {
-      resetAddForm();
-      showTab('list');
     }).catch(function (e) {
-      $('aerr').textContent = e.message || 'ما انحفظ';
+      alert('ما انحفظ التعديل: ' + (e.message || ''));
     });
+    resetAddForm();
+    showTab('list');
   } else {
     var doc = {
       adId: adId,
@@ -459,12 +613,11 @@ $('f-add').addEventListener('submit', function (e) {
       createdAt: now,
       day: dayKey(now)
     };
-    db.collection('debts').add(doc).then(function () {
-      resetAddForm();
-      showTab('list');
-    }).catch(function (e) {
-      $('aerr').textContent = e.message || 'ما انحفظ';
+    db.collection('debts').add(doc).catch(function (e) {
+      alert('ما انحفظ الدين: ' + (e.message || ''));
     });
+    resetAddForm();
+    showTab('list');
   }
 });
 
@@ -483,6 +636,9 @@ document.addEventListener('click', function (e) {
   if (a === 'tab') { showTab(t.dataset.tab); return; }
   if (a === 'logout') { logout(); return; }
   if (a === 'install') { installApp($('instmsg')); return; }
+  if (a === 'export-csv') { doExport('download'); return; }
+  if (a === 'share-csv') { doExport('share'); return; }
+  if (a === 'print-rep') { doPrint(); return; }
   if (a === 'pay' && id) {
     var d = debts.filter(function (x) { return x.id === id; })[0];
     if (!d) return;
@@ -642,36 +798,6 @@ if ($('f-req')) $('f-req').addEventListener('submit', function (e) {
 
 /* preview mode (owner only): ?pv=<adId> */
 var PV = new URLSearchParams(location.search).get('pv') || '';
-function pvToast() {
-  var t = document.getElementById('pvtoast');
-  if (!t) { t = document.createElement('div'); t.id = 'pvtoast'; t.style.cssText = 'position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:8px 16px;border-radius:999px;font-size:13px;z-index:99'; document.body.appendChild(t); }
-  t.textContent = 'معاينة فقط — ما ينحفظ شي'; t.hidden = false;
-  clearTimeout(pvToast._t); pvToast._t = setTimeout(function () { t.hidden = true; }, 1500);
-}
-function pvExit() {
-  try { if (window.parent !== window) { window.parent.postMessage('pv-close', '*'); return; } } catch (e) {}
-  if (window.opener) { try { window.close(); return; } catch (e) {} }
-  location.href = 'panel.html';
-}
-function pvLoad() {
-  var bar = document.createElement('div');
-  bar.style.cssText = 'position:sticky;top:0;z-index:50;background:#222;color:#fff;text-align:center;padding:6px;font-size:13px';
-  bar.innerHTML = '<span>وضع المعاينة — للعرض فقط</span> ';
-  var xb = document.createElement('button'); xb.type = 'button'; xb.textContent = 'خروج من المعاينة';
-  xb.style.cssText = 'margin-inline-start:10px;background:#fff;color:#222;border:0;border-radius:999px;padding:3px 12px;font-weight:600';
-  xb.onclick = pvExit; bar.appendChild(xb);
-  document.body.insertBefore(bar, document.body.firstChild);
-  document.addEventListener('click', function (e) { var t = e.target.closest('[data-act]'); if (t && t.dataset.act !== 'tab') { e.preventDefault(); e.stopPropagation(); pvToast(); } }, true);
-  document.addEventListener('submit', function (e) { e.preventDefault(); e.stopPropagation(); pvToast(); }, true);
-  var un = auth.onAuthStateChanged(function (u) {
-    un();
-    if (!u || u.isAnonymous) { $('lerr').textContent = 'سجّل دخول بحساب كوكل من اللوحة أولاً ثم افتح المعاينة.'; return; }
-    db.collection('ads').doc(PV).get().then(function (ds) {
-      if (!ds.exists) { $('lerr').textContent = 'الإعلان غير موجود.'; return; }
-      openApp(PV, ds.data());
-    }).catch(function (e) { $('lerr').textContent = (e && e.message) || 'تعذر التحميل'; });
-  });
-}
 (function () {
   if (PV) { pvLoad(); return; }
   var c = '';

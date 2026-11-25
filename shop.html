@@ -273,8 +273,9 @@ form.g { background: var(--surface); border: 1px solid var(--line); border-radiu
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js"></script>
 <script src="push.js"></script>
 <script src="qrcode.min.js"></script>
+<script src="firebase-config.js"></script>
+<script src="helpers.js"></script>
 <script>
-var FBCONFIG = { apiKey: 'AIzaSyDT27G2lUpfUPcAMvRIPkllY3bzbQv87Eg', authDomain: 'chaychi-61eaf.firebaseapp.com', projectId: 'chaychi-61eaf', storageBucket: 'chaychi-61eaf.firebasestorage.app', messagingSenderId: '669532553284', appId: '1:669532553284:web:b999af1fc4824c7affbc11' };
 var auth, db, fbOK = false;
 try {
   firebase.initializeApp(FBCONFIG);
@@ -283,13 +284,6 @@ try {
   fbOK = true;
 } catch (e) { fbOK = false; }
 
-function $(id) { return document.getElementById(id); }
-function dayKey(ts) {
-  var d = ts ? new Date(ts) : new Date();
-  var y = d.getFullYear(), m = d.getMonth() + 1, day = d.getDate();
-  return y + '-' + (m < 10 ? '0' : '') + m + '-' + (day < 10 ? '0' : '') + day;
-}
-function esc(t) { return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 function ar(n) {
   if (n == null || n === '') return '';
   var num = Number(n);
@@ -308,16 +302,6 @@ function westernDigits(s) {
     return String('٠١٢٣٤٥٦٧٨٩'.indexOf(d));
   }).replace(/[٬،\s,]/g, '');
 }
-function parsePrice(s) {
-  var w = westernDigits(s).replace(/[^\d.]/g, '');
-  if (!w || w === '.') return NaN;
-  var n = Number(w);
-  if (!isFinite(n) || isNaN(n)) return NaN;
-  // دينار: خليه عدد صحيح؛ دولار: خليه مرتبتين
-  if (Math.abs(n - Math.round(n)) < 1e-9) return Math.round(n);
-  return Math.round(n * 100) / 100;
-}
-function normCode(c) { return String(c || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, ''); }
 
 var ad = null, adId = null, unsub = null, unsubOrders = null, adOrders = [];
 
@@ -333,11 +317,6 @@ window.addEventListener('appinstalled', function () {
   var box = document.getElementById('instbox');
   if (box) box.hidden = true;
 });
-function isStandalone() {
-  try {
-    return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-  } catch (e) { return false; }
-}
 function installApp(msgEl) {
   if (deferredInstall) {
     deferredInstall.prompt();
@@ -390,13 +369,6 @@ function wav(freqs, gap, dur, vol) {
   var bin = '';
   for (var q = 0; q < bytes.length; q++) bin += String.fromCharCode(bytes[q]);
   return 'data:audio/wav;base64,' + btoa(bin);
-}
-function uri(kind) {
-  if (!WAVS[kind]) {
-    var p = kind === 'silent' ? { f: [440], g: 0, d: 0.05, v: 0 } : PATTERNS[kind];
-    WAVS[kind] = wav(p.f, p.g, p.d, p.v);
-  }
-  return WAVS[kind];
 }
 function unlockAudio() {
   try {
@@ -1162,36 +1134,6 @@ document.addEventListener('click', function (e) {
 
 /* preview mode (owner only): ?pv=<adId> */
 var PV = new URLSearchParams(location.search).get('pv') || '';
-function pvToast() {
-  var t = document.getElementById('pvtoast');
-  if (!t) { t = document.createElement('div'); t.id = 'pvtoast'; t.style.cssText = 'position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:8px 16px;border-radius:999px;font-size:13px;z-index:99'; document.body.appendChild(t); }
-  t.textContent = 'معاينة فقط — ما ينحفظ شي'; t.hidden = false;
-  clearTimeout(pvToast._t); pvToast._t = setTimeout(function () { t.hidden = true; }, 1500);
-}
-function pvExit() {
-  try { if (window.parent !== window) { window.parent.postMessage('pv-close', '*'); return; } } catch (e) {}
-  if (window.opener) { try { window.close(); return; } catch (e) {} }
-  location.href = 'panel.html';
-}
-function pvLoad() {
-  var bar = document.createElement('div');
-  bar.style.cssText = 'position:sticky;top:0;z-index:50;background:#222;color:#fff;text-align:center;padding:6px;font-size:13px';
-  bar.innerHTML = '<span>وضع المعاينة — للعرض فقط</span> ';
-  var xb = document.createElement('button'); xb.type = 'button'; xb.textContent = 'خروج من المعاينة';
-  xb.style.cssText = 'margin-inline-start:10px;background:#fff;color:#222;border:0;border-radius:999px;padding:3px 12px;font-weight:600';
-  xb.onclick = pvExit; bar.appendChild(xb);
-  document.body.insertBefore(bar, document.body.firstChild);
-  document.addEventListener('click', function (e) { var t = e.target.closest('[data-act]'); if (t && t.dataset.act !== 'tab') { e.preventDefault(); e.stopPropagation(); pvToast(); } }, true);
-  document.addEventListener('submit', function (e) { e.preventDefault(); e.stopPropagation(); pvToast(); }, true);
-  var un = auth.onAuthStateChanged(function (u) {
-    un();
-    if (!u || u.isAnonymous) { $('lerr').textContent = 'سجّل دخول بحساب كوكل من اللوحة أولاً ثم افتح المعاينة.'; return; }
-    db.collection('ads').doc(PV).get().then(function (ds) {
-      if (!ds.exists) { $('lerr').textContent = 'الإعلان غير موجود.'; return; }
-      openApp(PV, ds.data());
-    }).catch(function (e) { $('lerr').textContent = (e && e.message) || 'تعذر التحميل'; });
-  });
-}
 (function () {
   if (PV) { pvLoad(); return; }
   var q = new URLSearchParams(location.search).get('c') || '';
