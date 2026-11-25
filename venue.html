@@ -217,8 +217,9 @@ h2 { font-size: 13px; font-weight: 600; color: var(--ink-2); margin: 18px 0 8px;
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js"></script>
 <script src="push.js"></script>
+<script src="firebase-config.js"></script>
+<script src="helpers.js"></script>
 <script>
-var FBCONFIG = { apiKey: 'AIzaSyDT27G2lUpfUPcAMvRIPkllY3bzbQv87Eg', authDomain: 'chaychi-61eaf.firebaseapp.com', projectId: 'chaychi-61eaf', storageBucket: 'chaychi-61eaf.firebasestorage.app', messagingSenderId: '669532553284', appId: '1:669532553284:web:b999af1fc4824c7affbc11' };
 var auth, db, fbOK = false;
 try {
   firebase.initializeApp(FBCONFIG);
@@ -227,8 +228,6 @@ try {
   fbOK = true;
 } catch (e) { fbOK = false; }
 
-function $(id) { return document.getElementById(id); }
-function esc(t) { return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 function ar(n) {
   if (n == null || n === '') return '';
   var num = Number(n);
@@ -247,16 +246,6 @@ function westernDigits(s) {
     return String('٠١٢٣٤٥٦٧٨٩'.indexOf(d));
   }).replace(/[٬،\s,]/g, '');
 }
-function parsePrice(s) {
-  var w = westernDigits(s).replace(/[^\d.]/g, '');
-  if (!w || w === '.') return NaN;
-  var n = Number(w);
-  if (!isFinite(n) || isNaN(n)) return NaN;
-  // دينار: خليه عدد صحيح؛ دولار: خليه مرتبتين
-  if (Math.abs(n - Math.round(n)) < 1e-9) return Math.round(n);
-  return Math.round(n * 100) / 100;
-}
-function normCode(c) { return String(c || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, ''); }
 
 var ad = null, adId = null, tableNo = 0, cart = {};
 
