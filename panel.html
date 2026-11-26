@@ -170,6 +170,7 @@ textarea.in { resize: vertical; min-height: 64px; }
     <button data-act="tab" data-tab="req" aria-pressed="false">الانضمام<span class="bd" id="bd" hidden></span></button>
     <button data-act="tab" data-tab="late" aria-pressed="false">ما دفعوا<span class="bd" id="lbd" hidden></span></button>
     <button data-act="tab" data-tab="grades" aria-pressed="false">الدرجات</button>
+    <button data-act="tab" data-tab="links" aria-pressed="false">الروابط</button>
     <button data-act="tab" data-tab="set" aria-pressed="false">الإعدادات</button>
   </nav>
 
@@ -249,6 +250,12 @@ textarea.in { resize: vertical; min-height: 64px; }
       <button class="btn" type="submit">ولّد كود</button>
     </form>
     <p class="note">كل كود لنسخة وجهاز واحد: أول جهاز يفعّله يرتبط به. إذا الزبون غيّر جهازه أو مسح بيانات المتصفح اضغط "فك الارتباط". "عدّل الحد" يرفع العدد بنفس الكود.</p>
+  </div>
+
+  <div id="v-links" hidden>
+    <h2>الروابط</h2>
+    <div class="cards" id="lklist"></div>
+    <p class="note">اضغط "نسخ" أو "مشاركة". الصفحات اللي تحتاج كود دخول، الكود ترسله أنت مع الرابط (من بطاقة الزبون بتبويب الإعلانات تنسخ رسالة جاهزة بالكود).</p>
   </div>
 
   <div id="v-set" hidden>
@@ -381,6 +388,29 @@ var adPriv = {};
 var glics = [];
 var GRADES_LINK = 'https://radhwanmalaah-sudo.github.io/mousl-online/grades.html';
 var glInvite = '';
+var SITE = 'https://radhwanmalaah-sudo.github.io/mousl-online/';
+var LINKS = [
+  { n: 'تطبيق الزبون', d: 'اللي يفتحه الزبون ويشوف الأسواق والمكاتب والبائعين', u: SITE },
+  { n: 'تطبيق البائع', d: 'للبائع المتجول، يدخل بكوده', u: SITE + 'seller.html' },
+  { n: 'إدارة المحل أو الصالة', d: 'لصاحب المحل أو الصالة، يدخل بكوده', u: SITE + 'shop.html' },
+  { n: 'دفتر ديوني', d: 'لصاحب المحل، يسجّل الديون بكوده', u: SITE + 'debts.html' },
+  { n: 'سجل درجات الطلاب', d: 'للمعلمين: تجريبي لـ 10 طلاب، وأكثر بكود', u: SITE + 'grades.html' },
+  { n: 'صفحة الروابط العامة', d: 'اللي تشاركها مع الناس', u: SITE + 'links.html' },
+  { n: 'لوحتي', d: 'صفحتك الخاصة (إلك فقط)', u: SITE + 'owner.html' }
+];
+function renderLinks() {
+  var el = $('lklist'); if (!el) return;
+  el.innerHTML = LINKS.map(function (x, i) {
+    return '<div class="card"><div class="shop">' + esc(x.n) + '</div><div class="meta"><span>' + esc(x.d) + '</span></div><div class="meta"><span class="ltr" style="direction:ltr;overflow-wrap:anywhere">' + esc(x.u) + '</span></div>' +
+      '<div class="btns"><button class="btn-ok" data-act="lk-copy" data-i="' + i + '">نسخ</button><button class="btn-line" data-act="lk-share" data-i="' + i + '">مشاركة</button></div></div>';
+  }).join('');
+}
+function copyUrl(u, btn) {
+  var old = btn.textContent;
+  function done(ok) { btn.textContent = ok ? 'تم النسخ ✓' : 'انسخه يدوياً'; setTimeout(function () { btn.textContent = old; }, 1600); }
+  function fb() { try { var t = document.createElement('textarea'); t.value = u; t.style.position = 'fixed'; t.style.opacity = '0'; document.body.appendChild(t); t.select(); var ok = document.execCommand('copy'); t.remove(); done(ok); } catch (e) { done(false); } }
+  try { navigator.clipboard.writeText(u).then(function () { done(true); }, fb); } catch (e) { fb(); }
+}
 
 function status(a) {
   var t = iso(new Date());
@@ -660,7 +690,7 @@ function copyText(srcId, btn) {
   try { navigator.clipboard.writeText(text).then(function () { done(true); }, fallback); } catch (e) { fallback(); }
 }
 function showTab(t) {
-  ['ads', 'sellers', 'req', 'late', 'grades', 'set'].forEach(function (k) { $('v-' + k).hidden = k !== t; });
+  ['ads', 'sellers', 'req', 'late', 'grades', 'links', 'set'].forEach(function (k) { $('v-' + k).hidden = k !== t; });
   Array.prototype.forEach.call(document.querySelectorAll('.ptabs button'), function (b) { b.setAttribute('aria-pressed', String(b.dataset.tab === t)); });
   window.scrollTo(0, 0);
 }
@@ -799,6 +829,8 @@ document.addEventListener('click', function (e) {
   else if (a === 'gl-reset') { if (!confirm('فك ارتباط الكود بالجهاز الحالي؟ بعدها أي جهاز يقدر يفعّله.')) return; db.collection('gradeLic').doc(id).update({ uid: '', claimedAt: 0 }).catch(fail); return; }
   else if (a === 'gl-tog') { var gt = glics.filter(function (x) { return x.id === id; })[0]; if (gt) db.collection('gradeLic').doc(id).update({ active: gt.active === false }).catch(fail); return; }
   else if (a === 'gl-del') { if (!confirm('حذف هذا الكود نهائياً؟ النسخة اللي تستخدمه ترجع تجريبية.')) return; db.collection('gradeLic').doc(id).delete().then(function () { if (glInvite === id) glInvite = ''; }).catch(fail); return; }
+  else if (a === 'lk-copy') { copyUrl(LINKS[+t.dataset.i].u, t); return; }
+  else if (a === 'lk-share') { var lk = LINKS[+t.dataset.i]; if (navigator.share) { navigator.share({ title: lk.n, text: lk.n + ' — مصلاوي اون لاين', url: lk.u }).catch(function () {}); } else copyUrl(lk.u, t); return; }
   else if (a === 'tab') { showTab(t.dataset.tab); return; }
   else if (a === 'copy') { copyText(t.dataset.src, t); return; }
   else if (a === 'stoggle') {
@@ -962,6 +994,7 @@ function signOut() { stopListening(); auth.signOut(); }
 
 renderPreview();
 renderSwatches();
+renderLinks();
 renderAll();
 if (!fbOK) { $('lerr').textContent = 'تعذر تحميل Firebase. تأكد من الإنترنت.'; }
 else {
