@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#A6311A">
+<title>طلب انضمام — مصلاوي اون لاين</title>
+<style>
+:root { color-scheme: light dark; --bg:#EEF1EE; --surface:#fff; --surface-2:#E3E9E5; --ink:#17201D; --ink-2:#52605B; --line:#D1D9D4; --tea:#A6311A; --tea-ink:#fff; --ok:#0E6B5F; --ok-bg:#D5EEE8; --bad:#A6311A; }
+@media (prefers-color-scheme: dark) { :root { --bg:#121816; --surface:#1B2320; --surface-2:#26302C; --ink:#E8EFEB; --ink-2:#9CAAA4; --line:#34413C; --tea:#E0775E; --tea-ink:#1A0A06; --ok:#6FD3C0; --ok-bg:#16332E; --bad:#FF9A85; } }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif; line-height: 1.6; }
+.app { max-width: 480px; margin: 0 auto; padding: 18px 16px 40px; display: grid; gap: 14px; }
+h1 { margin: 6px 0 0; font-size: 26px; font-weight: 600; }
+.sub { color: var(--ink-2); margin: 0; font-size: 14px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 16px; display: grid; gap: 12px; }
+label { display: block; font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+.in { width: 100%; background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 12px; padding: 11px 12px; font: inherit; }
+.in:focus { outline: 2px solid var(--tea); outline-offset: -1px; }
+.types { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.types button { border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 12px; padding: 12px 6px; font: inherit; font-weight: 600; cursor: pointer; }
+.types button[aria-pressed="true"] { background: var(--tea); color: var(--tea-ink); border-color: var(--tea); }
+.types small { display: block; font-weight: 400; font-size: 12px; opacity: .85; }
+.btn { background: var(--tea); color: var(--tea-ink); border: 0; border-radius: 12px; padding: 13px; font: inherit; font-weight: 700; cursor: pointer; width: 100%; }
+.btn:disabled { opacity: .6; }
+.err { color: var(--bad); min-height: 1.2em; margin: 0; font-size: 14px; }
+.note { color: var(--ink-2); font-size: 13px; margin: 0; }
+.code { font-size: 28px; letter-spacing: .2em; direction: ltr; text-align: center; background: var(--surface-2); border-radius: 12px; padding: 6px; color: var(--tea); font-weight: 700; }
+.ok { background: var(--ok-bg); color: var(--ok); border-radius: 12px; padding: 10px 12px; }
+a.btn { display: block; text-align: center; text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div>
+    <h1>طلب انضمام</h1>
+    <p class="sub">مصلاوي اون لاين — عبّي بياناتك وننتظر موافقة صاحب التطبيق، وبعدها يطلع لك كود الدخول هنا.</p>
+  </div>
+
+  <form class="card" id="form" novalidate>
+    <div>
+      <label>شنو نوع صفحتك؟</label>
+      <div class="types" id="types">
+        <button type="button" data-k="venue" aria-pressed="true">صالة / كافتيريا<small>طلبات من الطاولات</small></button>
+        <button type="button" data-k="sales" aria-pressed="false">محل بيع<small>منتجات وطلبات</small></button>
+        <button type="button" data-k="services" aria-pressed="false">مكتب / خدمات<small>إعلان وتواصل</small></button>
+        <button type="button" data-k="debts" aria-pressed="false">دفتر ديوني<small>تسجيل ديون الزبائن</small></button>
+      </div>
+    </div>
+    <div><label for="name">اسم المحل / الجهة</label><input class="in" id="name" maxlength="30" autocomplete="off" placeholder="مثال: كافتيريا النور"></div>
+    <div><label for="phone">رقم جوالك</label><input class="in" id="phone" type="tel" inputmode="tel" maxlength="14" autocomplete="off" placeholder="07701234567"></div>
+    <div><label for="zone">المنطقة</label><select class="in" id="zone"></select></div>
+    <div id="tw"><label for="tables">عدد الطاولات</label><input class="in" id="tables" type="number" inputmode="numeric" min="1" max="200" value="10"></div>
+    <p class="err" id="err" role="alert"></p>
+    <button class="btn" type="submit" id="send">ارسل الطلب</button>
+  </form>
+
+  <div class="card" id="wait" hidden></div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="push.js"></script>
+<script src="firebase-config.js"></script>
+<script src="helpers.js"></script>
+<script>
+var ZONES = [], DRINKS = [], kind = 'venue', myUid = null, db = null, auth = null, unsub = null;
+var SITE = location.href.replace(/[^\/]*$/, '');
+var NAMES = { venue: 'صالة / كافتيريا', sales: 'محل بيع', services: 'مكتب / خدمات', debts: 'دفتر ديوني' };
+try { firebase.initializeApp(FBCONFIG); auth = firebase.auth(); db = firebase.firestore(); try { db.settings({ experimentalAutoDetectLongPolling: true, merge: true }); } catch (e) {} } catch (e) { $('err').textContent = 'تعذر تحميل Firebase. تأكد من الإنترنت.'; }
+function ensureAuth() {
+  return new Promise(function (res, rej) {
+    if (!auth) { rej(new Error('firebase')); return; }
+    var un = auth.onAuthStateChanged(function (u) { un(); if (u) { myUid = u.uid; res(u); } else auth.signInAnonymously().then(function (c) { myUid = c.user.uid; res(c.user); }, rej); });
+  });
+}
+function errText(e) {
+  var c = (e && e.code) || '';
+  if (c === 'permission-denied') return 'ما كدرنا نرسل الطلب (يمكن عندك طلب سابق). جرّب بعد شوية.';
+  if (c === 'unavailable') return 'ماكو اتصال بالإنترنت. جرّب مرة ثانية.';
+  return 'صار خطأ: ' + (c || (e && e.message) || 'غير معروف');
+}
+function setKind(k) {
+  kind = k;
+  Array.prototype.forEach.call(document.querySelectorAll('#types button'), function (b) { b.setAttribute('aria-pressed', String(b.dataset.k === k)); });
+  $('tw').hidden = k !== 'venue';
+}
+$('types').addEventListener('click', function (e) { var b = e.target.closest('button[data-k]'); if (b) setKind(b.dataset.k); });
+function fillZones() {
+  var cur = $('zone').value;
+  $('zone').innerHTML = ZONES.length ? ZONES.map(function (z) { return '<option value="' + esc(z.id) + '">' + esc(z.name) + '</option>'; }).join('') : '<option value="">جارٍ التحميل…</option>';
+  if (cur) $('zone').value = cur;
+}
+function show(html) { $('wait').innerHTML = html; $('wait').hidden = !html; $('form').hidden = !!html; }
+function watchMine() {
+  if (unsub) unsub();
+  unsub = db.collection('joinRequests').doc(myUid).onSnapshot(function (s) {
+    var d = s.exists ? s.data() : null;
+    if (!d || !d.kind) { show(''); return; }
+    var nm = NAMES[d.kind] || '';
+    if (d.status === 'pending') show('<h2 style="margin:0">طلبك وصل ✅</h2><p class="note">' + esc(d.name) + ' — ' + esc(nm) + '</p><p>ننتظر موافقة صاحب التطبيق. افتح هالصفحة بعدين من نفس الجهاز، وإذا انوافق عليك يظهر كودك هنا. وممكن يتواصل وياك على رقمك.</p>');
+    else if (d.status === 'approved' && d.code) {
+      var link = SITE + (d.kind === 'debts' ? 'debts.html' : 'shop.html') + '?c=' + encodeURIComponent(d.code);
+      show('<div class="ok"><b>تمت الموافقة 🎉</b> — ' + esc(d.name) + '</div><div><label>كود الدخول</label><div class="code">' + esc(d.code) + '</div></div><a class="btn" href="' + esc(link) + '">افتح صفحتك</a><p class="note">احفظ الكود. الرابط: ' + esc(link) + '</p>');
+    } else if (d.status === 'rejected') { show(''); $('err').textContent = 'الطلب السابق انرفض. تقدر تعدّل بياناتك وترسله من جديد.'; $('name').value = d.name || ''; $('phone').value = d.phone || ''; }
+    else show('');
+  }, function () { show(''); });
+}
+$('form').addEventListener('submit', function (e) {
+  e.preventDefault();
+  var name = $('name').value.trim(), phone = normPhone($('phone').value), tables = parseInt($('tables').value, 10), zone = $('zone').value, err = '';
+  if (!name) err = 'اكتب اسم المحل أو الجهة.';
+  else if (!phone) err = 'رقم الجوال لازم يكون أرقام فقط، مثال 07701234567.';
+  else if (!zone) err = 'اختر المنطقة.';
+  else if (kind === 'venue' && !(tables >= 1 && tables <= 200)) err = 'عدد الطاولات من 1 إلى 200.';
+  $('err').textContent = err; if (err) return;
+  var doc = { uid: myUid, name: name, phone: phone, zone: zone, drinks: [], kind: kind, status: 'pending', createdAt: Date.now() };
+  if (kind === 'venue') doc.tables = tables;
+  $('send').disabled = true;
+  ensureAuth().then(function () {
+    doc.uid = myUid;
+    var ref = db.collection('joinRequests').doc(myUid);
+    return ref.get().then(function (s) { return s.exists ? ref.update(doc) : ref.set(doc); });
+  }).then(function () { try { if (window.MPush) MPush.notify('join', myUid); } catch (x) {} watchMine(); }, function (x) { $('err').textContent = errText(x); }).then(function () { $('send').disabled = false; });
+});
+fillZones();
+ensureAuth().then(function () {
+  watchZones(function () { fillZones(); });
+  watchMine();
+}, function () { $('err').textContent = 'تعذر الاتصال. تأكد من الإنترنت.'; });
+setKind('venue');
+</script>
+</body>
+</html>

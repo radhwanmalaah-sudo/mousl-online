@@ -396,6 +396,7 @@ var LINKS = [
   { n: 'دفتر ديوني', d: 'لصاحب المحل، يسجّل الديون بكوده', u: SITE + 'debts.html' },
   { n: 'سجل درجات الطلاب', d: 'للمعلمين: تجريبي لـ 10 طلاب، وأكثر بكود', u: SITE + 'grades.html' },
   { n: 'صفحة الروابط العامة', d: 'اللي تشاركها مع الناس', u: SITE + 'links.html' },
+  { n: 'طلب انضمام (للصالات والمحلات)', d: 'يعبّي فيه صاحب الصالة أو المحل طلبه وتوافق عليه من «الانضمام»', u: SITE + 'join.html' },
   { n: 'لوحتي', d: 'صفحتك الخاصة (إلك فقط)', u: SITE + 'owner.html' }
 ];
 function renderLinks() {
@@ -706,9 +707,22 @@ function createSeller(name, phone, zone, menuIds, extra) {
   if (extra) extra(batch, code);
   return batch.commit().then(function () { return { id: ref.id, name: name, phone: phone, zone: zone, code: code }; });
 }
+function approveAdReq(r) {
+  var code = genCode(), aref = db.collection('ads').doc(), batch = db.batch(), pt = r.kind, now = Date.now();
+  batch.set(aref, { shop: r.name, text: r.name, phone: r.phone, zones: [r.zone], start: off(0), end: off(365), pageType: pt, active: true, views: 0, clicks: 0, createdAt: now, currency: (pt === 'services' ? 'none' : 'iqd'), items: [], tableCount: pt === 'venue' ? (r.tables || 10) : 0, debtsEnabled: pt === 'debts' });
+  batch.set(db.collection('adPrivate').doc(aref.id), { code: code, createdAt: now });
+  batch.set(db.collection('adCodes').doc(code), { aid: aref.id });
+  batch.update(db.collection('joinRequests').doc(r.id), { status: 'approved', code: code, approvedAt: now, aid: aref.id });
+  batch.commit().then(function () {
+    adPriv[aref.id] = { code: code };
+    lastAdInvite = { id: aref.id, shop: r.name, ownerCode: code, pageType: pt };
+    showTab('ads'); renderAll(); window.scrollTo(0, 0);
+  }, fail);
+}
 function approveReq(id) {
   var r = reqs.filter(function (x) { return x.id === id; })[0];
   if (!r) return;
+  if (r.kind) { approveAdReq(r); return; }
   createSeller(r.name, r.phone, r.zone, r.drinks || [], function (batch, code) {
     batch.update(db.collection('joinRequests').doc(id), { status: 'approved', code: code, approvedAt: Date.now() });
   }).then(function (x) { invite = x; showTab('sellers'); renderAll(); }, fail);
@@ -743,6 +757,7 @@ function renderSellers() {
         : '<button class="btn-line" data-act="sask" data-id="' + x.id + '">احذف</button>') + '</div></div>';
   }).join('');
 }
+var REQKIND = { venue: 'صالة / كافتيريا', sales: 'محل بيع', services: 'مكتب / خدمات', debts: 'دفتر ديوني' };
 function renderReq() {
   $('bd').hidden = !reqs.length;
   $('bd').textContent = ar(reqs.length);
@@ -750,7 +765,7 @@ function renderReq() {
   $('rlist').innerHTML = reqs.map(function (r) {
     return '<div class="card"><div class="row"><div class="shop">' + esc(r.name) + '</div><span class="pill busy">ينتظر موافقتك</span></div>' +
       '<div class="meta"><span>' + esc(zoneName(r.zone)) + '</span><span class="ltr">' + esc(r.phone) + '</span></div>' +
-      '<div class="chips">' + (r.drinks || []).map(function (d) { return '<span>' + esc(drinkName(d)) + '</span>'; }).join('') + '</div>' +
+      (r.kind ? '<div class="chips"><span>' + esc(REQKIND[r.kind] || r.kind) + '</span>' + (r.kind === 'venue' && r.tables ? '<span>' + ar(r.tables) + ' طاولة</span>' : '') + '</div>' : '<div class="chips">' + (r.drinks || []).map(function (d) { return '<span>' + esc(drinkName(d)) + '</span>'; }).join('') + '</div>') +
       '<div class="btns"><button class="btn-ok" data-act="approve" data-id="' + r.id + '">وافق وأعطه كود</button>' +
       (rconfirm === r.id
         ? '<button class="btn-line danger" data-act="reject" data-id="' + r.id + '">تأكيد الرفض</button><button class="btn-line" data-act="rcancel">لا</button>'
