@@ -76,6 +76,7 @@ table.g { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 
 .ib { background: transparent; border: 0; font-size: 17px; padding: 4px; }
 .note { color: var(--ink-2); font-size: 12px; }
 .warnb { background: var(--warn-bg); color: var(--warn); border-radius: 12px; padding: 8px 12px; margin-bottom: 10px; display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.warnb.okb { background: var(--ok-bg); color: var(--ok); }
 .warnb button { border: 1px solid currentColor; background: transparent; color: inherit; border-radius: 10px; padding: 5px 12px; font-weight: 700; }
 .ov { position: fixed; inset: 0; background: rgba(10, 16, 30, .55); display: none; align-items: center; justify-content: center; padding: 14px; z-index: 50; }
 .ov.on { display: flex; }
@@ -178,6 +179,7 @@ input[type=checkbox][data-sel], input[type=checkbox][data-selall] { width: 18px;
     </div>
   </div>
 
+  <div class="warnb" id="licb"><span></span><button type="button" data-a="lic">تفعيل / كود</button></div>
   <div class="warnb" id="bk-warn" hidden><span id="bk-warn-t"></span><button type="button" data-a="backup-dl">حمّل نسخة الآن</button></div>
 
   <div class="card">
@@ -285,7 +287,7 @@ function save() {
 function getList() { for (var i = 0; i < db.lists.length; i++) if (db.lists[i].id === db.cur) return db.lists[i]; return null; }
 function newList(meta, copyFrom, silent) {
   var L = { id: uid(), school: meta.school || '', cls: meta.cls || '', sec: meta.sec || '', sub: meta.sub || '', teacher: meta.teacher || '', year: meta.year || '', students: [] };
-  if (copyFrom) copyFrom.students.forEach(function (s) { L.students.push(blank(s.name)); });
+  if (copyFrom) { var rm = roomLeft(); copyFrom.students.forEach(function (s, i) { if (rm === Infinity || i < rm) L.students.push(blank(s.name)); }); }
   db.lists.push(L); db.cur = L.id; if (!silent) save();
   return L;
 }
@@ -387,7 +389,7 @@ function updateStats() {
     L.students.forEach(function (s) { var c = calc(s); var x = INPUTS.indexOf(k) >= 0 ? c.v[k] : c[k]; if (x != null) { sum += x; n++; } });
     td.textContent = n ? R(sum / n) : '';
   });
-  renderBackupInfo();
+  renderBackupInfo(); renderLic();
 }
 function renderAll() { syncPass(); renderLists(); renderMeta(); renderTable(); }
 
@@ -441,16 +443,17 @@ function openImport() {
 /* ---------- استيراد / تصدير ---------- */
 function splitLine(line) { return line.indexOf('\t') >= 0 ? line.split('\t') : line.split(','); }
 function doImport(text) {
-  var L = getList(), added = 0;
+  var L = getList(), added = 0, skipped = 0, room = roomLeft();
   text.replace(/\r/g, '').split('\n').forEach(function (line) {
     if (!line.trim()) return;
     var p = splitLine(line).map(function (x) { return x.trim(); });
     var name = p[0]; if (!name) return;
+    if (added >= room) { skipped++; return; }
     var s = blank(name);
     for (var i = 0; i < INPUTS.length; i++) { var v = p[i + 1]; if (v != null && v !== '' && num(v) != null) s[INPUTS[i]] = String(num(v)); }
     L.students.push(s); added++;
   });
-  save(); renderTable(); toast('تمت إضافة ' + added + ' طالب');
+  save(); renderTable(); toast('تمت إضافة ' + added + ' طالب' + (skipped ? ' (تخطيت ' + skipped + ' بسبب الحد)' : '')); if (skipped) openLic('limit');
 }
 function printTable() {
   var L = getList(); setPage('landscape');
@@ -757,6 +760,107 @@ function doInstall() {
   modal('<h3>تثبيت التطبيق</h3>' + (ios ? '<ol><li>افتح الرابط من Safari</li><li>اضغط زر المشاركة (المربع والسهم)</li><li>اختر «إضافة إلى الشاشة الرئيسية»</li></ol>' : '<ol><li>افتح الرابط من Chrome</li><li>اضغط قائمة المتصفح (⋮)</li><li>اختر «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية»</li></ol>') + '<p class="note">بعد التثبيت يفتح مثل أي تطبيق، حتى بدون إنترنت.</p><button class="btn-l" data-a="close">تمام</button>');
 }
 
+/* ---------- الترخيص (تجريبي 10 طلاب + كود لكل نسخة) ---------- */
+var LICK = 'sdg-lic', TRIAL = 10, GRACE = 14 * 864e5, WA = '9647710510879';
+var FBCFG = { apiKey: 'AIzaSyDT27G2lUpfUPcAMvRIPkllY3bzbQv87Eg', authDomain: 'chaychi-61eaf.firebaseapp.com', projectId: 'chaychi-61eaf', storageBucket: 'chaychi-61eaf.firebasestorage.app', messagingSenderId: '669532553284', appId: '1:669532553284:web:b999af1fc4824c7affbc11' };
+var lic = null, fbP = null;
+function loadLic() { try { lic = JSON.parse(localStorage.getItem(LICK) || 'null'); } catch (e) { lic = null; } if (lic && !lic.code) lic = null; }
+function saveLic() { try { if (lic) localStorage.setItem(LICK, JSON.stringify(lic)); else localStorage.removeItem(LICK); } catch (e) {} }
+function licState() {
+  if (!lic) return 'trial';
+  if (lic.exp && Date.now() > lic.exp) return 'expired';
+  if (Date.now() - lic.at > GRACE) return 'stale';
+  return 'ok';
+}
+function limitNow() { return licState() === 'ok' ? (lic.limit > 0 ? lic.limit : Infinity) : TRIAL; }
+function totalStudents() { return db.lists.reduce(function (n, L) { return n + L.students.length; }, 0); }
+function roomLeft() { var l = limitNow(); return l === Infinity ? Infinity : Math.max(0, l - totalStudents()); }
+function dShow(ms) { var d = new Date(ms); return d.getDate() + '/' + (d.getMonth() + 1) + '/' + d.getFullYear(); }
+function renderLic() {
+  var st = licState(), tot = totalStudents(), l = limitNow(), el = $('licb'); if (!el) return;
+  var t, cls = '';
+  if (st === 'ok') { t = '✅ نسخة مرخّصة — ' + tot + (l === Infinity ? ' طالب (العدد مفتوح)' : ' من ' + l + ' طالب') + (lic.exp ? ' · تنتهي ' + dShow(lic.exp) : ''); cls = 'okb'; }
+  else if (st === 'expired') t = '⚠️ انتهى الترخيص (' + dShow(lic.exp) + '). بياناتك محفوظة وتقدر تشوفها وتصدّرها، بس الإضافة متوقفة.';
+  else if (st === 'stale') t = '⚠️ لازم الاتصال بالإنترنت مرة لتأكيد الترخيص. لحد ذاك الحد مثل التجريبي (' + TRIAL + ').';
+  else t = '🔓 نسخة تجريبية: ' + tot + ' من ' + TRIAL + ' طلاب';
+  if (st !== 'ok' && tot >= l) t += ' — وصلت الحد.';
+  el.className = 'warnb ' + cls; el.firstElementChild.textContent = t;
+}
+function loadScript(src) { return new Promise(function (res, rej) { var s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = function () { rej({ m: 'net' }); }; document.head.appendChild(s); }); }
+function fbReady() {
+  if (fbP) return fbP;
+  var base = 'https://www.gstatic.com/firebasejs/10.14.1/';
+  var p = (window.firebase && firebase.firestore) ? Promise.resolve() : loadScript(base + 'firebase-app-compat.js').then(function () { return loadScript(base + 'firebase-auth-compat.js'); }).then(function () { return loadScript(base + 'firebase-firestore-compat.js'); });
+  fbP = p.then(function () { if (!firebase.apps.length) firebase.initializeApp(FBCFG); return { auth: firebase.auth(), db: firebase.firestore() }; });
+  fbP.catch(function () { fbP = null; });
+  return fbP;
+}
+function normCodeG(v) { return String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); }
+function licCheck(code, claim) {
+  var F;
+  return fbReady().then(function (f) { F = f; return F.auth.currentUser || F.auth.signInAnonymously().then(function (c) { return c.user; }); }).then(function (u) {
+    var ref = F.db.collection('gradeLic').doc(code);
+    return ref.get().then(function (d) {
+      if (!d.exists) throw { m: 'notfound' };
+      var x = d.data(), now = Date.now(), L = getList() || {};
+      if (x.active === false) throw { m: 'revoked' };
+      if (x.expires && now > x.expires) throw { m: 'expired' };
+      var mine = x.uid && x.uid === u.uid;
+      if (x.uid && !mine) throw { m: 'used' };
+      if (!mine && !claim) throw { m: 'used' };
+      var data = { lastSeen: now, students: totalStudents(), school: String(L.school || '').slice(0, 80) };
+      if (!mine) { data.uid = u.uid; data.claimedAt = now; }
+      return ref.update(data).then(function () { return { code: code, limit: Number(x.limit) || 0, exp: Number(x.expires) || 0, at: now }; }, function (e) { if (e && e.code === 'permission-denied') throw { m: 'used' }; throw e; });
+    });
+  });
+}
+function licErr(e) {
+  var m = e && e.m, c = e && e.code;
+  if (m === 'notfound') return 'الكود غلط. تأكد منه وأعد المحاولة.';
+  if (m === 'revoked') return 'هذا الكود ملغى. تواصل مع المطوّر.';
+  if (m === 'expired') return 'انتهت صلاحية هذا الكود.';
+  if (m === 'used') return 'هذا الكود مفعّل بجهاز ثاني. كل كود لنسخة وحدة. إذا غيّرت جهازك تواصل مع المطوّر يفكه لك.';
+  if (m === 'net' || c === 'unavailable' || c === 'auth/network-request-failed' || (typeof navigator !== 'undefined' && navigator.onLine === false)) return 'ما كو اتصال بالإنترنت. التفعيل يحتاج إنترنت مرة وحدة.';
+  return 'ما كدرت أتحقق من الكود. جرّب بعد شوية.';
+}
+function licVerifyBoot() {
+  if (!lic || navigator.onLine === false) return;
+  licCheck(lic.code, false).then(function (r) { lic = r; saveLic(); renderLic(); }, function (e) {
+    if (e && (e.m === 'notfound' || e.m === 'revoked' || e.m === 'used' || e.m === 'expired')) { var was = lic; lic = null; if (e.m === 'expired') { lic = { code: was.code, limit: was.limit, exp: Date.now() - 1, at: Date.now() }; } saveLic(); renderLic(); toast(e.m === 'expired' ? 'انتهى الترخيص' : 'الترخيص مو صالح بهذا الجهاز'); }
+  });
+}
+function waLink() {
+  var L = getList() || {};
+  var t = 'السلام عليكم، أريد كود تفعيل لسجل درجات الطلاب\nالمدرسة: ' + (L.school || '—') + '\nالمعلم: ' + (L.teacher || '—') + '\nعدد الطلاب الحالي: ' + totalStudents();
+  return 'https://wa.me/' + WA + '?text=' + encodeURIComponent(t);
+}
+function openLic(why) {
+  var st = licState(), tot = totalStudents(), l = limitNow();
+  var msg = why === 'limit' ? '<p class="note" style="color:var(--bad);font-weight:700">وصلت حد الطلاب (' + (l === Infinity ? '' : l) + '). لإضافة المزيد أدخل كود التفعيل.</p>' : '';
+  var info = st === 'ok' ? '<p>✅ النسخة مرخّصة. الكود: <b dir="ltr">' + esc(lic.code) + '</b><br>الحد: ' + (lic.limit > 0 ? lic.limit + ' طالب' : 'مفتوح') + ' · الحالي: ' + tot + (lic.exp ? '<br>ينتهي: ' + dShow(lic.exp) : '') + '</p>' : '<p>النسخة التجريبية تسمح بـ <b>' + TRIAL + '</b> طلاب بكل القوائم مجتمعة. بياناتك ما تنمسح أبداً، وتقدر تشوفها وتصدّرها حتى لو وصلت الحد.</p>';
+  modal('<h3>تفعيل النسخة</h3>' + msg + info +
+    '<label class="f" for="lic-code">كود التفعيل</label><input class="in" id="lic-code" dir="ltr" maxlength="12" placeholder="XXXXXXXX" autocomplete="off" style="letter-spacing:.2em;text-align:center">' +
+    '<p class="note" id="lic-msg" role="status"></p>' +
+    '<div class="row"><button class="btn" data-a="lic-go">تفعيل</button><a class="btn-l" href="' + esc(waLink()) + '" target="_blank" rel="noopener" style="text-decoration:none">اطلب كود (واتساب)</a>' + (lic ? '<button class="btn-l" data-a="lic-chk">فحص الآن</button>' : '') + '<button class="btn-l" data-a="close">إغلاق</button></div>' +
+    '<p class="note">الكود لنسخة وحدة وجهاز واحد، ويحتاج إنترنت مرة وحدة بالتفعيل. بعدها يشتغل بدون إنترنت، ويتأكد تلقائياً كل ما تتصل.</p>');
+}
+function licGo(code) {
+  code = normCodeG(code); var m = $('lic-msg'); if (code.length < 6) { m.textContent = 'اكتب الكود كامل.'; return; }
+  m.textContent = 'جارٍ التحقق…';
+  licCheck(code, true).then(function (r) { lic = r; saveLic(); closeModal(); renderLic(); toast('تم التفعيل ✅'); }, function (e) { var mm = $('lic-msg'); if (mm) mm.textContent = licErr(e); });
+}
+function licNow() {
+  var m = $('lic-msg'); if (m) m.textContent = 'جارٍ الفحص…';
+  licCheck(lic.code, false).then(function (r) { lic = r; saveLic(); renderLic(); openLic(); toast('الترخيص سليم ✅'); }, function (e) {
+    if (e && (e.m === 'notfound' || e.m === 'revoked' || e.m === 'used')) { lic = null; saveLic(); renderLic(); }
+    var mm = $('lic-msg'); if (mm) mm.textContent = licErr(e);
+  });
+}
+function needRoom(n) { // يرجّع عدد المسموح إضافته من n
+  var r = roomLeft(); if (r === Infinity || n <= r) return n;
+  openLic('limit'); return r;
+}
+
 /* ---------- أحداث ---------- */
 document.addEventListener('click', function (e) {
   var t = e.target.closest('[data-a],[data-f]'); if (!t) return;
@@ -772,7 +876,7 @@ document.addEventListener('click', function (e) {
   else if (a === 'new-list') openNewList();
   else if (a === 'new-list-ok') {
     var meta = {}; document.querySelectorAll('[data-nl]').forEach(function (i) { meta[i.getAttribute('data-nl')] = i.value.trim(); });
-    var cp = $('nl-copy').checked ? L : null; newList(meta, cp); closeModal(); renderAll(); toast('تم إنشاء القائمة');
+    var cp = $('nl-copy').checked ? L : null, nl = newList(meta, cp); closeModal(); renderAll(); toast('تم إنشاء القائمة'); if (cp && nl.students.length < cp.students.length) openLic('limit');
   }
   else if (a === 'copy-names') openCopyNames();
   else if (a === 'copy-ok') {
@@ -780,9 +884,9 @@ document.addEventListener('click', function (e) {
     document.querySelectorAll('[data-cp]:checked').forEach(function (c) {
       var dst = db.lists.filter(function (x) { return x.id === c.getAttribute('data-cp'); })[0]; if (!dst) return;
       var have = {}; dst.students.forEach(function (s) { have[s.name.trim()] = 1; });
-      L.students.forEach(function (s) { if (!have[s.name.trim()]) { dst.students.push(blank(s.name)); n++; } });
+      L.students.forEach(function (s) { if (!have[s.name.trim()] && (roomLeft() > 0)) { dst.students.push(blank(s.name)); n++; } });
     });
-    save(); closeModal(); renderTable(); toast('تم نسخ ' + n + ' اسم');
+    save(); closeModal(); renderTable(); toast('تم نسخ ' + n + ' اسم'); if (roomLeft() < 1 && limitNow() !== Infinity) openLic('limit');
   }
   else if (a === 'del-list') {
     if (db.lists.length < 2) { toast('لازم تبقى قائمة وحدة على الأقل'); return; }
@@ -791,6 +895,7 @@ document.addEventListener('click', function (e) {
     }
   }
   else if (a === 'add') {
+    if (needRoom(1) < 1) return;
     L.students.push(blank('')); save(); filter = 'all'; query = ''; $('q').value = ''; document.querySelectorAll('[data-f]').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-f') === 'all'); });
     renderTable(); var inp = document.querySelectorAll('[data-nm]'); if (inp.length) { var last = inp[inp.length - 1]; last.focus(); last.scrollIntoView({ block: 'center' }); }
   }
@@ -813,6 +918,9 @@ document.addEventListener('click', function (e) {
     if (s2 && confirm('حذف الطالب «' + (s2.name || 'بدون اسم') + '»؟')) { L.students = L.students.filter(function (s) { return s.id !== id; }); save(); renderTable(); }
   }
   else if (a === 'install') doInstall();
+  else if (a === 'lic') openLic();
+  else if (a === 'lic-go') licGo($('lic-code').value);
+  else if (a === 'lic-chk') licNow();
 });
 $('ov').addEventListener('click', function (e) { if (e.target === $('ov')) closeModal(); });
 document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeModal(); });
@@ -864,7 +972,7 @@ document.addEventListener('paste', function (e) {
   var tr = t.closest('tr'), startRow = L.students.map(function (s) { return s.id; }).indexOf(tr.getAttribute('data-id'));
   var startCol = t.classList.contains('cell') ? INPUTS.indexOf(t.getAttribute('data-k')) : -1; // -1 = عمود الاسم
   rows.forEach(function (r, ri) {
-    var s = L.students[startRow + ri]; if (!s) { s = blank(''); L.students.push(s); }
+    var s = L.students[startRow + ri]; if (!s) { if (needRoom(1) < 1) return; s = blank(''); L.students.push(s); }
     r.forEach(function (v, ci) {
       v = v.trim();
       if (startCol === -1 && ci === 0) { s.name = v; return; }
@@ -884,7 +992,7 @@ function setCfg(t) {
 }
 window.addEventListener('beforeunload', function () { try { localStorage.setItem(KEY, JSON.stringify(db)); } catch (e) {} });
 
-load(); renderAll();
+loadLic(); load(); renderAll(); licVerifyBoot();
 try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
 if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) { try { navigator.serviceWorker.register('sw.js'); } catch (e) {} }
 })();

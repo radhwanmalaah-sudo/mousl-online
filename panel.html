@@ -169,6 +169,7 @@ textarea.in { resize: vertical; min-height: 64px; }
     <button data-act="tab" data-tab="sellers" aria-pressed="false">البائعون</button>
     <button data-act="tab" data-tab="req" aria-pressed="false">الانضمام<span class="bd" id="bd" hidden></span></button>
     <button data-act="tab" data-tab="late" aria-pressed="false">ما دفعوا<span class="bd" id="lbd" hidden></span></button>
+    <button data-act="tab" data-tab="grades" aria-pressed="false">الدرجات</button>
     <button data-act="tab" data-tab="set" aria-pressed="false">الإعدادات</button>
   </nav>
 
@@ -233,6 +234,21 @@ textarea.in { resize: vertical; min-height: 64px; }
     <h2>المحظورون</h2>
     <div class="cards" id="blocklist"></div>
     <p class="note">الحظر يمنع الزبون من الطلب برقمه وبجهازه. إذا دفع اضغط "دفع" وارفع الحظر. الزبون اللي يمسح بيانات المتصفح ويغيّر رقمه يتجاوز الحظر، فالرقم هو الأهم.</p>
+  </div>
+
+  <div id="v-grades" hidden>
+    <div id="gl-slot"></div>
+    <h2>تراخيص سجل الدرجات</h2>
+    <div class="cards" id="gllist"></div>
+    <h2>كود جديد</h2>
+    <form id="glform" novalidate>
+      <div class="f"><label for="gl-name">اسم الزبون (المعلم / المدرسة)</label><input class="in" id="gl-name" maxlength="60" autocomplete="off"></div>
+      <div class="f"><label for="gl-limit">عدد الطلاب</label><select class="in" id="gl-limit"><option value="30">30</option><option value="50">50</option><option value="100" selected>100</option><option value="200">200</option><option value="500">500</option><option value="0">مفتوح (بدون حد)</option></select></div>
+      <div class="f"><label for="gl-exp">المدة</label><select class="in" id="gl-exp"><option value="0">بدون انتهاء</option><option value="30">شهر</option><option value="180">6 أشهر</option><option value="365">سنة</option></select></div>
+      <p class="err" id="gl-err" role="alert"></p>
+      <button class="btn" type="submit">ولّد كود</button>
+    </form>
+    <p class="note">كل كود لنسخة وجهاز واحد: أول جهاز يفعّله يرتبط به. إذا الزبون غيّر جهازه أو مسح بيانات المتصفح اضغط "فك الارتباط". "عدّل الحد" يرفع العدد بنفس الكود.</p>
   </div>
 
   <div id="v-set" hidden>
@@ -362,6 +378,9 @@ var ads = [], sellers = [], privs = {}, reqs = [], unpaid = [], blocked = {}, la
 var confirmId = '', sconfirm = '', rconfirm = '', invite = null;
 var unsubs = [];
 var adPriv = {};
+var glics = [];
+var GRADES_LINK = 'https://radhwanmalaah-sudo.github.io/mousl-online/grades.html';
+var glInvite = '';
 
 function status(a) {
   var t = iso(new Date());
@@ -497,7 +516,34 @@ function renderPreview() {
   $('pv').innerHTML = '<span class="tag">إعلان</span><div class="shop">' + esc(shop) + '</div><p>' + esc(text) + '</p><div class="ph">' + esc(phone) + '</div>';
   $('cnt').textContent = ar($('text').value.length) + ' حرف';
 }
-function renderAll() { renderStats(); renderList(); renderSellers(); renderReq(); renderZonesBox(); renderLate(); }
+function glStatus(x) {
+  if (x.active === false) return { k: 'off', t: 'ملغى' };
+  if (x.expires && Date.now() > x.expires) return { k: 'off', t: 'منتهي' };
+  if (x.uid) return { k: 'ok', t: 'مفعّل' };
+  return { k: 'busy', t: 'بانتظار التفعيل' };
+}
+function glDate(ms) { if (!ms) return ''; var d = new Date(ms); return ar(d.getDate() + '/' + (d.getMonth() + 1) + '/' + d.getFullYear()); }
+function glText(x) {
+  return 'أهلاً ' + x.name + '،\nرابط سجل درجات الطلاب:\n' + GRADES_LINK + '\nكود التفعيل: ' + x.id + '\n\nالنسخة التجريبية لـ 10 طلاب، والكود يفتح ' + (x.limit > 0 ? 'لحد ' + x.limit + ' طالب' : 'العدد بدون حد') + '. الكود لجهاز واحد فقط.';
+}
+function renderGrades() {
+  var slot = $('gl-slot'), g = glics.filter(function (x) { return x.id === glInvite; })[0];
+  if (slot) slot.innerHTML = g ? '<div class="invite"><h3>رسالة التفعيل — ' + esc(g.name) + '</h3><div class="row"><span style="color:var(--ink-2);font-size:14px">الكود</span><span class="codeb">' + esc(g.id) + '</span></div><textarea id="gltxt" readonly>' + esc(glText(g)) + '</textarea><div class="btns"><button class="btn-ok" data-act="copy" data-src="gltxt">انسخ الرسالة</button></div></div>' : '';
+  var el = $('gllist'); if (!el) return;
+  if (!glics.length) { el.innerHTML = '<div class="empty"><strong>ماكو أكواد</strong><p>ولّد أول كود من الفورم تحت.</p></div>'; return; }
+  el.innerHTML = glics.map(function (x) {
+    var st = glStatus(x);
+    return '<div class="card' + (st.k === 'off' ? ' dim' : '') + '"><div class="row"><div><div class="shop">' + esc(x.name) + '</div><div class="meta"><span>الحد: ' + (x.limit > 0 ? ar(x.limit) : 'مفتوح') + '</span>' + (x.uid ? '<span>الطلاب الحاليين: ' + ar(x.students || 0) + '</span>' : '') + (x.school ? '<span>' + esc(x.school) + '</span>' : '') + (x.claimedAt ? '<span>فُعّل ' + glDate(x.claimedAt) + '</span>' : '') + (x.lastSeen ? '<span>آخر اتصال ' + glDate(x.lastSeen) + '</span>' : '') + (x.expires ? '<span>ينتهي ' + glDate(x.expires) + '</span>' : '') + '</div></div><span class="codeb" style="font-size:18px">' + esc(x.id) + '</span></div>' +
+      '<div class="row"><span class="pill ' + st.k + '">' + st.t + '</span></div>' +
+      '<div class="btns"><button class="btn-line" data-act="gl-inv" data-id="' + esc(x.id) + '">رسالة التفعيل</button>' +
+      '<button class="btn-line" data-act="gl-lim" data-id="' + esc(x.id) + '">عدّل الحد</button>' +
+      '<button class="btn-line" data-act="gl-exp" data-id="' + esc(x.id) + '">المدة</button>' +
+      (x.uid ? '<button class="btn-line" data-act="gl-reset" data-id="' + esc(x.id) + '">فك الارتباط</button>' : '') +
+      '<button class="btn-line" data-act="gl-tog" data-id="' + esc(x.id) + '">' + (x.active === false ? 'فعّل' : 'ألغِ') + '</button>' +
+      '<button class="btn-line danger" data-act="gl-del" data-id="' + esc(x.id) + '">احذف</button></div></div>';
+  }).join('');
+}
+function renderAll() { renderGrades(); renderStats(); renderList(); renderSellers(); renderReq(); renderZonesBox(); renderLate(); }
 var zconfirm = '';
 function renderZonesBox() {
   var el = $('zlist'); if (!el) return;
@@ -614,7 +660,7 @@ function copyText(srcId, btn) {
   try { navigator.clipboard.writeText(text).then(function () { done(true); }, fallback); } catch (e) { fallback(); }
 }
 function showTab(t) {
-  ['ads', 'sellers', 'req', 'late', 'set'].forEach(function (k) { $('v-' + k).hidden = k !== t; });
+  ['ads', 'sellers', 'req', 'late', 'grades', 'set'].forEach(function (k) { $('v-' + k).hidden = k !== t; });
   Array.prototype.forEach.call(document.querySelectorAll('.ptabs button'), function (b) { b.setAttribute('aria-pressed', String(b.dataset.tab === t)); });
   window.scrollTo(0, 0);
 }
@@ -747,6 +793,12 @@ document.addEventListener('click', function (e) {
     }
     return;
   }
+  else if (a === 'gl-inv') { glInvite = id; renderGrades(); window.scrollTo(0, 0); return; }
+  else if (a === 'gl-lim') { var gx = glics.filter(function (x) { return x.id === id; })[0]; var v = prompt('الحد الجديد لعدد الطلاب (0 = مفتوح):', gx ? gx.limit : 100); if (v === null) return; v = parseInt(String(v).replace(/[^0-9]/g, ''), 10); if (isNaN(v) || v < 0 || v > 100000) { alert('رقم غير صحيح'); return; } db.collection('gradeLic').doc(id).update({ limit: v }).catch(fail); return; }
+  else if (a === 'gl-exp') { var v2 = prompt('كم يوم من الآن ينتهي الكود؟ (0 = بدون انتهاء):', '365'); if (v2 === null) return; v2 = parseInt(String(v2).replace(/[^0-9]/g, ''), 10); if (isNaN(v2) || v2 < 0 || v2 > 3650) { alert('رقم غير صحيح'); return; } db.collection('gradeLic').doc(id).update({ expires: v2 ? Date.now() + v2 * 86400000 : 0 }).catch(fail); return; }
+  else if (a === 'gl-reset') { if (!confirm('فك ارتباط الكود بالجهاز الحالي؟ بعدها أي جهاز يقدر يفعّله.')) return; db.collection('gradeLic').doc(id).update({ uid: '', claimedAt: 0 }).catch(fail); return; }
+  else if (a === 'gl-tog') { var gt = glics.filter(function (x) { return x.id === id; })[0]; if (gt) db.collection('gradeLic').doc(id).update({ active: gt.active === false }).catch(fail); return; }
+  else if (a === 'gl-del') { if (!confirm('حذف هذا الكود نهائياً؟ النسخة اللي تستخدمه ترجع تجريبية.')) return; db.collection('gradeLic').doc(id).delete().then(function () { if (glInvite === id) glInvite = ''; }).catch(fail); return; }
   else if (a === 'tab') { showTab(t.dataset.tab); return; }
   else if (a === 'copy') { copyText(t.dataset.src, t); return; }
   else if (a === 'stoggle') {
@@ -855,6 +907,14 @@ $('setform').addEventListener('submit', function (e) {
   db.collection('config').doc('app').set(data, { merge: true }).then(function () { $('set-err').textContent = 'انحفظ. يطلع عند الزبائن والبائعين خلال لحظات.'; }, fail);
 });
 
+$('glform').addEventListener('submit', function (e) {
+  e.preventDefault();
+  var name = $('gl-name').value.trim(); $('gl-err').textContent = '';
+  if (!name) { $('gl-err').textContent = 'اكتب اسم الزبون.'; return; }
+  var code = genCode(), days = parseInt($('gl-exp').value, 10) || 0, now = Date.now();
+  db.collection('gradeLic').doc(code).set({ name: name, limit: parseInt($('gl-limit').value, 10) || 0, uid: '', active: true, expires: days ? now + days * 86400000 : 0, createdAt: now, claimedAt: 0, lastSeen: 0, students: 0, school: '' }).then(function () { $('gl-name').value = ''; glInvite = code; renderGrades(); }, fail);
+});
+
 /* ---------- login (Google) and live data ---------- */
 function stopListening() { unsubs.forEach(function (u) { u(); }); unsubs = []; }
 function listenAll() {
@@ -871,6 +931,7 @@ function listenAll() {
   unsubs.push(watchConfig(function (c) { if (!pickedColor && c.color) { pickedColor = c.color; $('colorin').value = c.color; renderSwatches(); } if (document.activeElement !== $('btext')) $('btext').value = c.bannerText || ''; if (document.activeElement !== $('bphone')) $('bphone').value = c.bannerPhone || ''; }));
   unsubs.push(db.collection('ads').orderBy('createdAt', 'desc').onSnapshot(function (s) { ads = s.docs.map(function (d) { var x = d.data(); x.id = d.id; x._legacy = x.ownerCode || ''; x.ownerCode = (adPriv[d.id] || {}).code || ''; return x; }); renderAll(); }, bad));
   unsubs.push(db.collection('adPrivate').onSnapshot(function (s) { adPriv = {}; s.docs.forEach(function (d) { adPriv[d.id] = d.data(); }); ads.forEach(function (a) { a.ownerCode = (adPriv[a.id] || {}).code || ''; }); renderAll(); }, bad));
+  unsubs.push(db.collection('gradeLic').orderBy('createdAt', 'desc').onSnapshot(function (s) { glics = s.docs.map(function (d) { var x = d.data(); x.id = d.id; return x; }); renderGrades(); }, bad));
   unsubs.push(db.collection('sellers').onSnapshot(function (s) { sellers = s.docs.map(function (d) { var x = d.data(); x.id = d.id; return x; }); renderAll(); }, bad));
   unsubs.push(db.collection('sellerPrivate').onSnapshot(function (s) { privs = {}; s.docs.forEach(function (d) { privs[d.id] = d.data(); }); renderAll(); }, bad));
   unsubs.push(db.collection('joinRequests').where('status', '==', 'pending').onSnapshot(function (s) { reqs = s.docs.map(function (d) { var x = d.data(); x.id = d.id; return x; }); renderAll(); }, bad));
