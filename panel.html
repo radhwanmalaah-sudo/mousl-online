@@ -708,8 +708,16 @@ function createSeller(name, phone, zone, menuIds, extra) {
   return batch.commit().then(function () { return { id: ref.id, name: name, phone: phone, zone: zone, code: code }; });
 }
 function approveAdReq(r) {
-  var code = genCode(), aref = db.collection('ads').doc(), batch = db.batch(), pt = r.kind, now = Date.now();
-  batch.set(aref, { shop: r.name, text: r.name, phone: r.phone, zones: [r.zone], start: off(0), end: off(365), pageType: pt, active: true, views: 0, clicks: 0, createdAt: now, currency: (pt === 'services' ? 'none' : 'iqd'), items: [], tableCount: pt === 'venue' ? (r.tables || 10) : 0, debtsEnabled: pt === 'debts' });
+  var code = genCode(), aref = db.collection('ads').doc(), batch = db.batch(), pt = r.kind, now = Date.now(), zid = r.zone;
+  if (r.zoneNew) {
+    var zs = document.querySelector('[data-zsel="' + r.id + '"]'), zv = zs ? zs.value : '__add';
+    if (zv === '__add') {
+      var dupe = ZONES.filter(function (z) { return z.name === r.zoneNew; })[0];
+      if (dupe) zid = dupe.id; else { zid = 'z' + Date.now().toString(36); batch.set(db.collection('zones').doc(zid), { name: r.zoneNew, o: Date.now() }); }
+    } else zid = zv;
+  }
+  if (!zid) { alert('اختر المنطقة أولاً.'); return; }
+  batch.set(aref, { shop: r.name, text: r.name, phone: r.phone, zones: [zid], start: off(0), end: off(365), pageType: pt, active: true, views: 0, clicks: 0, createdAt: now, currency: (pt === 'services' ? 'none' : 'iqd'), items: [], tableCount: pt === 'venue' ? (r.tables || 10) : 0, debtsEnabled: pt === 'debts' });
   batch.set(db.collection('adPrivate').doc(aref.id), { code: code, createdAt: now });
   batch.set(db.collection('adCodes').doc(code), { aid: aref.id });
   batch.update(db.collection('joinRequests').doc(r.id), { status: 'approved', code: code, approvedAt: now, aid: aref.id });
@@ -764,7 +772,8 @@ function renderReq() {
   if (!reqs.length) { $('rlist').innerHTML = '<div class="empty"><strong>ماكو طلبات</strong><p>طلبات الانضمام الجديدة تطلع هنا.</p></div>'; return; }
   $('rlist').innerHTML = reqs.map(function (r) {
     return '<div class="card"><div class="row"><div class="shop">' + esc(r.name) + '</div><span class="pill busy">ينتظر موافقتك</span></div>' +
-      '<div class="meta"><span>' + esc(zoneName(r.zone)) + '</span><span class="ltr">' + esc(r.phone) + '</span></div>' +
+      '<div class="meta"><span>' + (r.zoneNew ? 'منطقة جديدة: ' + esc(r.zoneNew) : esc(zoneName(r.zone))) + '</span><span class="ltr">' + esc(r.phone) + '</span></div>' +
+      (r.zoneNew ? '<div class="f"><label>المنطقة عند الموافقة</label><select class="in" data-zsel="' + esc(r.id) + '"><option value="__add">أضف «' + esc(r.zoneNew) + '» كمنطقة جديدة</option>' + ZONES.map(function (z) { return '<option value="' + esc(z.id) + '">ادمجها بـ ' + esc(z.name) + '</option>'; }).join('') + '</select></div>' : '') +
       (r.kind ? '<div class="chips"><span>' + esc(REQKIND[r.kind] || r.kind) + '</span>' + (r.kind === 'venue' && r.tables ? '<span>' + ar(r.tables) + ' طاولة</span>' : '') + '</div>' : '<div class="chips">' + (r.drinks || []).map(function (d) { return '<span>' + esc(drinkName(d)) + '</span>'; }).join('') + '</div>') +
       '<div class="btns"><button class="btn-ok" data-act="approve" data-id="' + r.id + '">وافق وأعطه كود</button>' +
       (rconfirm === r.id

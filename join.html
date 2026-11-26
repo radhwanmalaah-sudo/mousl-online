@@ -51,6 +51,7 @@ a.btn { display: block; text-align: center; text-decoration: none; }
     <div><label for="name">اسم المحل / الجهة</label><input class="in" id="name" maxlength="30" autocomplete="off" placeholder="مثال: كافتيريا النور"></div>
     <div><label for="phone">رقم جوالك</label><input class="in" id="phone" type="tel" inputmode="tel" maxlength="14" autocomplete="off" placeholder="07701234567"></div>
     <div><label for="zone">المنطقة</label><select class="in" id="zone"></select></div>
+    <div id="znw" hidden><label for="znew">اكتب اسم منطقتك</label><input class="in" id="znew" maxlength="40" autocomplete="off" placeholder="مثال: حي الزهور"><p class="note">راح نضيف منطقتك بعد موافقة صاحب التطبيق.</p></div>
     <div id="tw"><label for="tables">عدد الطاولات</label><input class="in" id="tables" type="number" inputmode="numeric" min="1" max="200" value="10"></div>
     <p class="err" id="err" role="alert"></p>
     <button class="btn" type="submit" id="send">ارسل الطلب</button>
@@ -87,11 +88,13 @@ function setKind(k) {
   Array.prototype.forEach.call(document.querySelectorAll('#types button'), function (b) { b.setAttribute('aria-pressed', String(b.dataset.k === k)); });
   $('tw').hidden = k !== 'venue';
 }
+$('zone').addEventListener('change', function () { $('znw').hidden = $('zone').value !== '__new'; });
 $('types').addEventListener('click', function (e) { var b = e.target.closest('button[data-k]'); if (b) setKind(b.dataset.k); });
 function fillZones() {
   var cur = $('zone').value;
-  $('zone').innerHTML = ZONES.length ? ZONES.map(function (z) { return '<option value="' + esc(z.id) + '">' + esc(z.name) + '</option>'; }).join('') : '<option value="">جارٍ التحميل…</option>';
+  $('zone').innerHTML = ZONES.map(function (z) { return '<option value="' + esc(z.id) + '">' + esc(z.name) + '</option>'; }).join('') + '<option value="__new">منطقتي مو بالقائمة</option>';
   if (cur) $('zone').value = cur;
+  $('znw').hidden = $('zone').value !== '__new';
 }
 function show(html) { $('wait').innerHTML = html; $('wait').hidden = !html; $('form').hidden = !!html; }
 function watchMine() {
@@ -104,20 +107,22 @@ function watchMine() {
     else if (d.status === 'approved' && d.code) {
       var link = SITE + (d.kind === 'debts' ? 'debts.html' : 'shop.html') + '?c=' + encodeURIComponent(d.code);
       show('<div class="ok"><b>تمت الموافقة 🎉</b> — ' + esc(d.name) + '</div><div><label>كود الدخول</label><div class="code">' + esc(d.code) + '</div></div><a class="btn" href="' + esc(link) + '">افتح صفحتك</a><p class="note">احفظ الكود. الرابط: ' + esc(link) + '</p>');
-    } else if (d.status === 'rejected') { show(''); $('err').textContent = 'الطلب السابق انرفض. تقدر تعدّل بياناتك وترسله من جديد.'; $('name').value = d.name || ''; $('phone').value = d.phone || ''; }
+    } else if (d.status === 'rejected') { show(''); $('err').textContent = 'الطلب السابق انرفض. تقدر تعدّل بياناتك وترسله من جديد.'; $('name').value = d.name || ''; $('phone').value = d.phone || ''; if (d.zoneNew) { $('zone').value = '__new'; $('znew').value = d.zoneNew; $('znw').hidden = false; } }
     else show('');
   }, function () { show(''); });
 }
 $('form').addEventListener('submit', function (e) {
   e.preventDefault();
-  var name = $('name').value.trim(), phone = normPhone($('phone').value), tables = parseInt($('tables').value, 10), zone = $('zone').value, err = '';
+  var name = $('name').value.trim(), phone = normPhone($('phone').value), tables = parseInt($('tables').value, 10), zone = $('zone').value, zn = $('znew').value.trim().replace(/\s+/g, ' '), err = '';
   if (!name) err = 'اكتب اسم المحل أو الجهة.';
   else if (!phone) err = 'رقم الجوال لازم يكون أرقام فقط، مثال 07701234567.';
   else if (!zone) err = 'اختر المنطقة.';
+  else if (zone === '__new' && zn.length < 2) err = 'اكتب اسم منطقتك.';
   else if (kind === 'venue' && !(tables >= 1 && tables <= 200)) err = 'عدد الطاولات من 1 إلى 200.';
   $('err').textContent = err; if (err) return;
-  var doc = { uid: myUid, name: name, phone: phone, zone: zone, drinks: [], kind: kind, status: 'pending', createdAt: Date.now() };
+  var doc = { uid: myUid, name: name, phone: phone, zone: zone === '__new' ? '' : zone, drinks: [], kind: kind, status: 'pending', createdAt: Date.now() };
   if (kind === 'venue') doc.tables = tables;
+  if (zone === '__new') doc.zoneNew = zn;
   $('send').disabled = true;
   ensureAuth().then(function () {
     doc.uid = myUid;
