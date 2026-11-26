@@ -42,6 +42,8 @@ h1 { margin: 0; font-size: 24px; color: var(--ink); }
 .card h2 { margin: 0 0 8px; font-size: 14px; color: var(--ink-2); font-weight: 600; }
 .grid6 { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
 @media (max-width: 900px) { .grid6 { grid-template-columns: repeat(2, 1fr); } }
+.grid6 { grid-template-columns: repeat(7, 1fr); }
+@media (max-width: 900px) { .grid6 { grid-template-columns: repeat(2, 1fr); } }
 label.f { display: block; font-size: 12px; color: var(--ink-2); margin-bottom: 3px; }
 .in { width: 100%; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
 .in:focus, .cell:focus { outline: 2px solid var(--brand); outline-offset: -1px; }
@@ -85,7 +87,66 @@ table.g { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 
 .toast.on { opacity: 1; }
 .empty { padding: 36px 14px; text-align: center; color: var(--ink-2); }
 .foot { margin-top: 10px; display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+
+.sec { font-weight: 700; margin: 12px 0 4px; color: var(--brand); }
+.tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.tile { border: 2px solid var(--line); border-radius: 10px; padding: 6px; font-size: 12px; text-align: center; cursor: pointer; background: #fff; color: #000; }
+.tile span { display: block; margin-top: 4px; }
+.tile.on { border-color: var(--brand); box-shadow: 0 0 0 2px var(--brand); }
+.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.md { max-width: 640px !important; }
+@media (max-width: 520px) { .tiles { grid-template-columns: repeat(2, 1fr); } .g2 { grid-template-columns: 1fr; } }
+input[type=checkbox][data-sel], input[type=checkbox][data-selall] { width: 18px; height: 18px; vertical-align: middle; margin-inline-end: 4px; }
+.cd { background: #fff; color: #000; direction: rtl; border: 1px solid #bbb; padding: 10px 14px; margin: 0 auto 12px; max-width: 560px; font-size: 12px; border-radius: 4px; font-family: var(--font); line-height: 1.4; }
+.cd1 { border: 3px double #222; }
+.cd2 { border: 1.5px solid #1F4FBF; }
+.cd .cbar { background: #1F4FBF; color: #fff; margin: -10px -14px 8px; padding: 8px; text-align: center; }
+.cd .cbar .hd { color: #dbe4ff; }
+.cd .lg { text-align: center; } .cd .lg img { height: 46px; }
+.cd h4 { margin: 0; text-align: center; font-size: 17px; }
+.cd .tt { text-align: center; font-weight: 700; font-size: 14px; border-bottom: 1px solid #aaa; padding-bottom: 4px; margin-bottom: 4px; }
+.cd .info { text-align: center; color: #56627F; font-size: 11px; margin: 4px 0; }
+.cd .hd { text-align: center; color: #56627F; font-size: 11px; }
+.cd .nmL { font-size: 14px; margin: 6px 0; text-align: right; }
+.cd .rk { color: #56627F; font-size: 12px; margin-inline-start: 12px; }
+.cd table { width: 100%; border-collapse: collapse; margin: 0; }
+.cd th, .cd td { border: 1px solid #888; padding: 3px 6px; text-align: center; color: #000; }
+.cd td.l { text-align: right; }
+.cd th { background: #E8ECF6; }
+.cd2 th { background: #1F4FBF; color: #fff; }
+.cd3 { border: 1px solid #ddd; } .cd3 th { background: #f2f2f2; } .cd3 td, .cd3 th { border-color: #ddd; }
+.cd .res { font-weight: 800; font-size: 14px; margin: 8px 0; padding: 4px 8px; border-radius: 6px; }
+.cd .nt { font-size: 11px; color: #444; margin-top: 4px; }
+.cd .sg { display: flex; gap: 8px; }
+.cd .sg div { flex: 1; text-align: center; border-top: 1px solid #444; padding-top: 3px; font-size: 11px; margin-top: 18px; }
+.cd .c4h { text-align: center; }
+.cd4 { font-size: 11px; }
 #print-root { display: none; }
+/* بطاقات الطباعة */
+#print-root .cd { background: #fff; color: #000; direction: rtl; border: 1px solid #bbb; padding: 10px 14px; margin: 0 auto 12px; max-width: 560px; font-size: 12px; border-radius: 4px; font-family: var(--font); line-height: 1.4; }
+#print-root .cd1 { border: 3px double #222; }
+#print-root .cd2 { border: 1.5px solid #1F4FBF; }
+#print-root .cd .cbar { background: #1F4FBF; color: #fff; margin: -10px -14px 8px; padding: 8px; text-align: center; }
+#print-root .cd .cbar .hd { color: #dbe4ff; }
+#print-root .cd .lg { text-align: center; } .cd .lg img { height: 46px; }
+#print-root .cd h4 { margin: 0; text-align: center; font-size: 17px; }
+#print-root .cd .tt { text-align: center; font-weight: 700; font-size: 14px; border-bottom: 1px solid #aaa; padding-bottom: 4px; margin-bottom: 4px; }
+#print-root .cd .info { text-align: center; color: #56627F; font-size: 11px; margin: 4px 0; }
+#print-root .cd .hd { text-align: center; color: #56627F; font-size: 11px; }
+#print-root .cd .nmL { font-size: 14px; margin: 6px 0; text-align: right; }
+#print-root .cd .rk { color: #56627F; font-size: 12px; margin-inline-start: 12px; }
+#print-root .cd table { width: 100%; border-collapse: collapse; margin: 0; }
+#print-root .cd th,#print-root .cd td { border: 1px solid #888; padding: 3px 6px; text-align: center; color: #000; }
+#print-root .cd td.l { text-align: right; }
+#print-root .cd th { background: #E8ECF6; }
+#print-root .cd2 th { background: #1F4FBF; color: #fff; }
+#print-root .cd3 { border: 1px solid #ddd; } .cd3 th { background: #f2f2f2; } .cd3 td, .cd3 th { border-color: #ddd; }
+#print-root .cd .res { font-weight: 800; font-size: 14px; margin: 8px 0; padding: 4px 8px; border-radius: 6px; }
+#print-root .cd .nt { font-size: 11px; color: #444; margin-top: 4px; }
+#print-root .cd .sg { display: flex; gap: 8px; }
+#print-root .cd .sg div { flex: 1; text-align: center; border-top: 1px solid #444; padding-top: 3px; font-size: 11px; margin-top: 18px; }
+#print-root .cd .c4h { text-align: center; }
+#print-root .cd4 { font-size: 11px; }
 @media print {
   body > *:not(#print-root) { display: none !important; }
   body { background: #fff !important; }
@@ -96,7 +157,10 @@ table.g { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 
   #print-root td.nm2 { text-align: right; }
   #print-root th { background: #e9e9e9; }
   #print-root tr { break-inside: avoid; }
-  @page { size: A4 landscape; margin: 10mm; }
+  #print-root .cd { max-width: none; margin: 0 0 5mm; border-radius: 0; font-size: 10px; }
+  #print-root .cd.pb { break-after: page; page-break-after: always; }
+  #print-root .cd { break-inside: avoid; }
+  #print-root .cd th, #print-root .cd td { padding: 2px 5px; }
 }
 </style>
 </head>
@@ -110,7 +174,7 @@ table.g { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 
     <div class="row">
       <div class="dev">تواصل مع المطور<br><b>Radhwan.T.Al Malaah</b><br>07710510879</div>
       <button class="btn-l" type="button" data-a="backup">💾 نسخة احتياطية</button>
-      <button class="btn-l" type="button" data-a="install" id="b-install" hidden>📲 تثبيت</button>
+      <button class="btn-l" type="button" data-a="install" id="b-install">📲 تثبيت</button>
     </div>
   </div>
 
@@ -134,6 +198,7 @@ table.g { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 
       <div><label class="f" for="m-sub">المادة</label><input class="in" id="m-sub" data-m="sub"></div>
       <div><label class="f" for="m-teacher">اسم المعلم</label><input class="in" id="m-teacher" data-m="teacher"></div>
       <div><label class="f" for="m-year">العام الدراسي</label><input class="in" id="m-year" data-m="year" placeholder="20252026"></div>
+      <div><label class="f" for="m-pass">حد النجاح</label><input class="in" id="m-pass" data-m="pass" inputmode="numeric" placeholder="50"></div>
     </div>
   </div>
 
@@ -169,6 +234,7 @@ table.g { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 
 </div>
 
 <div class="ov" id="ov"><div class="md" id="md" role="dialog" aria-modal="true"></div></div>
+<div class="ov" id="pv"><div class="md" id="pvm" style="max-width:640px !important"><div class="row" style="margin-bottom:10px"><button class="btn" data-a="cards-docx">حفظ Word</button><button class="btn-l" data-a="cards-pdf">PDF / طباعة</button><button class="btn-l" data-a="pv-close">رجوع</button></div><div id="pvb"></div></div></div>
 <div class="toast" id="toast" role="status"></div>
 <div id="print-root" aria-hidden="true"></div>
 
@@ -192,6 +258,7 @@ var COLS = [
 ];
 var INPUTS = COLS.filter(function (c) { return c.inp; }).map(function (c) { return c.k; });
 var PASS = 50;
+function syncPass() { var L = getList(), p = L ? num(L.pass) : null; PASS = (p != null && p > 0 && p <= 100) ? p : 50; }
 
 var db = { cur: null, lists: [] };
 var filter = 'all', query = '', saveT = null, deferredInstall = null;
@@ -259,13 +326,13 @@ function renderLists() {
 }
 function renderMeta() {
   var L = getList();
-  ['school', 'cls', 'sec', 'sub', 'teacher', 'year'].forEach(function (k) {
+  ['school', 'cls', 'sec', 'sub', 'teacher', 'year', 'pass'].forEach(function (k) {
     var el = document.querySelector('[data-m="' + k + '"]');
     if (el && document.activeElement !== el) el.value = L[k] || '';
   });
 }
 function rowHtml(s, i) {
-  var c = calc(s), h = '<tr data-id="' + esc(s.id) + '"><td class="n"><span class="no">' + (i + 1) + '</span><input class="nm" data-nm value="' + esc(s.name) + '" aria-label="اسم الطالب"></td>';
+  var c = calc(s), h = '<tr data-id="' + esc(s.id) + '"><td class="n"><input type="checkbox" data-sel' + (sel[s.id] ? ' checked' : '') + ' aria-label="تحديد"><span class="no">' + (i + 1) + '</span><input class="nm" data-nm value="' + esc(s.name) + '" aria-label="اسم الطالب"></td>';
   COLS.forEach(function (col) {
     if (col.inp) {
       var n = num(s[col.k]);
@@ -274,7 +341,7 @@ function rowHtml(s, i) {
       var f = c.fn; h += '<td class="fin ' + (f == null ? '' : f >= PASS ? 'ok' : 'no') + '" data-c="fn">' + (f == null ? '' : f) + '</td>';
     } else { var x = c[col.k]; h += '<td class="calc" data-c="' + col.k + '">' + (x == null ? '' : x) + '</td>'; }
   });
-  return h + '<td><button class="ib" data-a="card1" title="بطاقة الطالب (Word)">📄</button><button class="ib" data-a="del-st" title="حذف">🗑️</button></td></tr>';
+  return h + '<td><button class="ib" data-a="note" title="ملاحظة للبطاقة">📝</button><button class="ib" data-a="card1" title="بطاقة الطالب">📄</button><button class="ib" data-a="del-st" title="حذف">🗑️</button></td></tr>';
 }
 function avgRowHtml(L) {
   var h = '<tr class="avg"><td class="n">معدل الصف</td>';
@@ -288,7 +355,7 @@ function avgRowHtml(L) {
 function renderTable() {
   var L = getList(), rows = visible(L);
   if (!L.students.length) { $('tw').innerHTML = '<div class="empty">ما كو طلاب بالقائمة. اضغط «إضافة طالب» أو «استيراد».</div>'; updateStats(); return; }
-  var h = '<table class="g"><thead><tr><th class="n h0">اسم الطالب</th>';
+  var h = '<table class="g"><thead><tr><th class="n h0"><input type="checkbox" data-selall aria-label="تحديد الكل"> اسم الطالب</th>';
   COLS.forEach(function (c) { h += '<th class="' + c.h + '">' + c.t + '</th>'; });
   h += '<th class="h0">إجراءات</th></tr></thead><tbody>';
   var idx = {}; L.students.forEach(function (s, i) { idx[s.id] = i; });
@@ -322,7 +389,7 @@ function updateStats() {
   });
   renderBackupInfo();
 }
-function renderAll() { renderLists(); renderMeta(); renderTable(); }
+function renderAll() { syncPass(); renderLists(); renderMeta(); renderTable(); }
 
 /* ---------- نسخة احتياطية ---------- */
 function bkStamp() { try { return Number(localStorage.getItem(BK)) || 0; } catch (e) { return 0; } }
@@ -371,12 +438,6 @@ function openImport() {
     '<textarea id="imp-t" placeholder="أحمد علي&#10;زينب حسن"></textarea>' +
     '<div class="row" style="margin-top:8px"><label class="btn-l" style="cursor:pointer">📂 اختيار ملف<input type="file" id="f-imp" accept=".csv,.txt,text/plain,text/csv" hidden></label><button class="btn" data-a="imp-ok">استيراد</button><button class="btn-l" data-a="close">إلغاء</button></div>');
 }
-function openCards() {
-  modal('<h3>بطاقات النتائج (Word)</h3><p class="note">يُنشأ ملف Word فيه بطاقة لكل طالب (٣ بطاقات بالصفحة) تقدر تطبعه وتوزعه.</p>' +
-    '<label class="chk"><input type="radio" name="cw" value="all" checked> كل الطلاب</label><label class="chk"><input type="radio" name="cw" value="pass"> الناجحين فقط</label><label class="chk"><input type="radio" name="cw" value="fail"> الراسبين فقط</label>' +
-    '<div class="row"><button class="btn" data-a="cards-ok">إنشاء الملف</button><button class="btn-l" data-a="close">إلغاء</button></div>');
-}
-
 /* ---------- استيراد / تصدير ---------- */
 function splitLine(line) { return line.indexOf('\t') >= 0 ? line.split('\t') : line.split(','); }
 function doImport(text) {
@@ -391,18 +452,8 @@ function doImport(text) {
   });
   save(); renderTable(); toast('تمت إضافة ' + added + ' طالب');
 }
-function csvCell(v, txt) { var t = v == null ? '' : String(v); if (txt && /^[=+\-@\t\r]/.test(t)) t = "'" + t; if (/[",\n\r]/.test(t)) t = '"' + t.replace(/"/g, '""') + '"'; return t; }
-function headRows(L) { return [['سجل درجات الطلاب'], ['المدرسة', L.school, 'الصف', L.cls, 'الشعبة', L.sec], ['المادة', L.sub, 'المعلم', L.teacher, 'العام الدراسي', L.year], []]; }
-function exportCsv() {
-  var L = getList(), out = [];
-  headRows(L).forEach(function (r) { out.push(r.map(function (c) { return csvCell(c, true); }).join(',')); });
-  out.push(['الاسم'].concat(COLS.map(function (c) { return c.t.replace(/<br>/g, ' '); })).map(function (c) { return csvCell(c); }).join(','));
-  L.students.forEach(function (s) { var c = calc(s); out.push([csvCell(s.name, true)].concat(COLS.map(function (col) { var x = col.inp ? c.v[col.k] : c[col.k]; return x == null ? '' : x; })).join(',')); });
-  dl('grades-' + (L.sub || 'list') + '-' + today() + '.csv', '﻿' + out.join('\r\n'), 'text/csv;charset=utf-8');
-  toast('تم تصدير الملف (يفتح بـ Excel)');
-}
 function printTable() {
-  var L = getList();
+  var L = getList(); setPage('landscape');
   var h = '<h1>سجل درجات الطلاب — ' + esc(listLabel(L)) + '</h1><div>المدرسة: ' + esc(L.school) + ' · المعلم: ' + esc(L.teacher) + ' · العام الدراسي: ' + esc(L.year) + '</div>';
   h += '<table><tr><th>#</th><th>اسم الطالب</th>' + COLS.map(function (c) { return '<th>' + c.t + '</th>'; }).join('') + '</tr>';
   L.students.forEach(function (s, i) { var c = calc(s); h += '<tr><td>' + (i + 1) + '</td><td class="nm2">' + esc(s.name) + '</td>' + COLS.map(function (col) { var x = col.inp ? c.v[col.k] : c[col.k]; return '<td>' + (x == null ? '' : x) + '</td>'; }).join('') + '</tr>'; });
@@ -410,22 +461,300 @@ function printTable() {
   h += '<tr><td></td><td class="nm2"><b>معدل الصف</b></td>' + avg + '</tr></table>';
   $('print-root').innerHTML = h; setTimeout(function () { window.print(); }, 150);
 }
-function cardHtml(L, s, last) {
-  var c = calc(s), f = c.fn, res = f == null ? 'غير مكتمل' : (f >= PASS ? 'ناجح' : 'راسب');
-  var rows = COLS.map(function (col) { var x = col.inp ? c.v[col.k] : c[col.k]; return '<tr><td style="border:1px solid #555;padding:2px 6px;background:#f1f1f1">' + col.t.replace(/<br>/g, ' ') + '</td><td style="border:1px solid #555;padding:2px 6px;text-align:center"><b>' + (x == null ? '—' : x) + '</b></td></tr>'; }).join('');
-  return '<div style="border:2px solid #1F4FBF;border-radius:8px;padding:8px 12px;margin:0 0 10px;' + (last ? 'page-break-after:always;' : '') + '"><div style="text-align:center;font-size:14pt"><b>' + esc(L.school) + '</b></div>' +
-    '<div style="text-align:center;font-size:10pt">بطاقة نتيجة — ' + esc(L.sub) + ' — ' + esc(L.cls) + ' ' + esc(L.sec) + ' — العام الدراسي ' + esc(L.year) + '</div>' +
-    '<div style="font-size:12pt;margin:4px 0"><b>الطالب: ' + esc(s.name) + '</b></div><table style="border-collapse:collapse;width:100%;font-size:10pt">' + rows + '</table>' +
-    '<div style="margin-top:4px;font-size:12pt"><b>الدرجة النهائية: ' + (f == null ? '—' : f) + ' — النتيجة: ' + res + '</b></div><div style="font-size:9pt">المعلم: ' + esc(L.teacher) + '</div></div>';
+/* ---------- ZIP + XLSX + DOCX (بدون مكتبات خارجية) ---------- */
+var CRC_T = (function () { var t = [], c, n, k; for (n = 0; n < 256; n++) { c = n; for (k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function crc32(b) { var c = 0xFFFFFFFF; for (var i = 0; i < b.length; i++) c = CRC_T[(c ^ b[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+var TE = new TextEncoder();
+function zipBlob(files, mime) {
+  var parts = [], central = [], off = 0;
+  files.forEach(function (f) {
+    var nb = TE.encode(f.name), d = typeof f.data === 'string' ? TE.encode(f.data) : f.data, crc = crc32(d);
+    var h = new DataView(new ArrayBuffer(30));
+    h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true); h.setUint16(8, 0, true); h.setUint16(10, 0, true); h.setUint16(12, 0x21, true);
+    h.setUint32(14, crc, true); h.setUint32(18, d.length, true); h.setUint32(22, d.length, true); h.setUint16(26, nb.length, true); h.setUint16(28, 0, true);
+    parts.push(new Uint8Array(h.buffer), nb, d);
+    var c = new DataView(new ArrayBuffer(46));
+    c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true); c.setUint16(8, 0x0800, true); c.setUint16(10, 0, true); c.setUint16(12, 0, true); c.setUint16(14, 0x21, true);
+    c.setUint32(16, crc, true); c.setUint32(20, d.length, true); c.setUint32(24, d.length, true); c.setUint16(28, nb.length, true); c.setUint32(42, off, true);
+    central.push(new Uint8Array(c.buffer), nb);
+    off += 30 + nb.length + d.length;
+  });
+  var cs = 0; central.forEach(function (p) { cs += p.length; });
+  var e = new DataView(new ArrayBuffer(22));
+  e.setUint32(0, 0x06054b50, true); e.setUint16(8, files.length, true); e.setUint16(10, files.length, true); e.setUint32(12, cs, true); e.setUint32(16, off, true);
+  return new Blob(parts.concat(central, [new Uint8Array(e.buffer)]), { type: mime });
 }
-function downloadCards(students, name) {
-  var L = getList();
-  if (!students.length) { toast('ما كو طلاب مطابقين'); return; }
-  var body = students.map(function (s, i) { return cardHtml(L, s, (i + 1) % 3 === 0 && i < students.length - 1); }).join('');
-  var doc = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>بطاقات النتائج</title>' +
-    '<style>body{font-family:Tahoma,Arial,sans-serif;direction:rtl}@page{size:A4;margin:12mm}</style></head><body dir="rtl">' + body + '</body></html>';
-  dl(name, '﻿' + doc, 'application/msword');
-  toast('تم إنشاء ملف Word');
+function dlBlob(name, blob) {
+  var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+}
+function xe(t) { return String(t == null ? '' : t).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '').replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+var XH = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n';
+
+/* ---- Excel (.xlsx) ---- */
+function colL(n) { var s = ''; n++; while (n > 0) { var m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); } return s; }
+function xfill(rgb) { return '<fill><patternFill patternType="solid"><fgColor rgb="FF' + rgb + '"/><bgColor indexed="64"/></patternFill></fill>'; }
+function xxf(font, fill, border, h) {
+  return '<xf numFmtId="0" fontId="' + font + '" fillId="' + fill + '" borderId="' + border + '" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="' + (h || 'center') + '" vertical="center" wrapText="1"/></xf>';
+}
+function xlsxStyles() {
+  var bd = '<border><left style="thin"><color rgb="FF9AA6C6"/></left><right style="thin"><color rgb="FF9AA6C6"/></right><top style="thin"><color rgb="FF9AA6C6"/></top><bottom style="thin"><color rgb="FF9AA6C6"/></bottom><diagonal/></border>';
+  return XH + '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+    '<fonts count="5"><font><sz val="11"/><name val="Arial"/></font><font><b/><sz val="11"/><name val="Arial"/></font><font><b/><sz val="15"/><name val="Arial"/></font><font><b/><sz val="11"/><color rgb="FF0E7A4F"/><name val="Arial"/></font><font><b/><sz val="11"/><color rgb="FFB3261E"/><name val="Arial"/></font></fonts>' +
+    '<fills count="8"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill>' + xfill('E8ECF6') + xfill('E3F4EA') + xfill('E1EEF8') + xfill('FCEFD3') + xfill('FBE3E1') + xfill('DDF3E8') + '</fills>' +
+    '<borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border>' + bd + '</borders>' +
+    '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
+    '<cellXfs count="16">' + [xxf(0, 0, 0), xxf(2, 0, 0), xxf(1, 2, 1), xxf(1, 3, 1), xxf(1, 4, 1), xxf(1, 5, 1), xxf(1, 6, 1), xxf(0, 0, 1, 'right'), xxf(0, 0, 1), xxf(1, 2, 1), xxf(3, 7, 1), xxf(4, 6, 1), xxf(1, 2, 1, 'right'), xxf(1, 2, 1), xxf(1, 0, 0, 'right'), xxf(0, 0, 0, 'right')].join('') + '</cellXfs>' +
+    '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>';
+}
+function buildXlsx(L) {
+  var rows = [], merges = [], NC = COLS.length + 2;
+  function cs(r, c, s, st) { return '<c r="' + colL(c) + r + '" s="' + st + '" t="inlineStr"><is><t xml:space="preserve">' + xe(s) + '</t></is></c>'; }
+  function cn(r, c, n, st) { return '<c r="' + colL(c) + r + '" s="' + st + '"><v>' + n + '</v></c>'; }
+  function ce(r, c, st) { return '<c r="' + colL(c) + r + '" s="' + st + '"/>'; }
+  function row(r, cells, ht) { rows.push('<row r="' + r + '"' + (ht ? ' ht="' + ht + '" customHeight="1"' : '') + '>' + cells.join('') + '</row>'); }
+  // عنوان
+  var t = ['سجل درجات الطلاب — ' + listLabel(L)]; var c1 = [cs(1, 0, t[0], 1)]; for (var i = 1; i < NC; i++) c1.push(ce(1, i, 1)); row(1, c1, 28); merges.push('A1:' + colL(NC - 1) + '1');
+  function metaRow(r, items) { // items: [label, value, spanCols]
+    var cells = [], c = 0;
+    items.forEach(function (it) {
+      cells.push(cs(r, c, it[0], 14)); c++;
+      var span = it[2] || 1; cells.push(cs(r, c, it[1] || '', 15)); for (var k = 1; k < span; k++) cells.push(ce(r, c + k, 15));
+      if (span > 1) merges.push(colL(c) + r + ':' + colL(c + span - 1) + r); c += span;
+    });
+    row(r, cells);
+  }
+  metaRow(2, [['المدرسة', L.school, 3], ['الصف', L.cls, 2], ['الشعبة', L.sec, 1], ['المادة', L.sub, 3]]);
+  metaRow(3, [['المعلم', L.teacher, 3], ['العام الدراسي', L.year, 2], ['حد النجاح', String(PASS), 1]]);
+  row(4, []);
+  var hs = { h0: 2, h1: 3, h2: 4, h3: 5, h4: 6 };
+  var hc = [cs(5, 0, 'ت', 2), cs(5, 1, 'اسم الطالب', 2)]; COLS.forEach(function (c, j) { hc.push(cs(5, j + 2, c.t.replace(/<br>/g, ' '), hs[c.h])); });
+  row(5, hc, 36);
+  L.students.forEach(function (s, i) {
+    var r = 6 + i, c = calc(s), cells = [cn(r, 0, i + 1, 8), cs(r, 1, s.name, 7)];
+    COLS.forEach(function (col, j) {
+      var x = col.inp ? c.v[col.k] : c[col.k];
+      if (col.k === 'fn') cells.push(x == null ? ce(r, j + 2, 9) : cn(r, j + 2, x, x >= PASS ? 10 : 11));
+      else cells.push(x == null ? ce(r, j + 2, col.inp ? 8 : 9) : cn(r, j + 2, x, col.inp ? 8 : 9));
+    });
+    row(r, cells);
+  });
+  var ar = 6 + L.students.length, av = classAvgs(L), ac = [ce(ar, 0, 13), cs(ar, 1, 'معدل الصف', 12)];
+  COLS.forEach(function (col, j) { ac.push(av[col.k] == null ? ce(ar, j + 2, 13) : cn(ar, j + 2, av[col.k], 13)); });
+  row(ar, ac);
+  var cols = '<cols><col min="1" max="1" width="5" customWidth="1"/><col min="2" max="2" width="28" customWidth="1"/><col min="3" max="' + NC + '" width="12" customWidth="1"/></cols>';
+  var sheet = XH + '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>' +
+    '<sheetViews><sheetView rightToLeft="1" workbookViewId="0"><pane xSplit="2" ySplit="5" topLeftCell="C6" activePane="bottomRight" state="frozen"/><selection pane="bottomRight" activeCell="C6" sqref="C6"/></sheetView></sheetViews>' +
+    '<sheetFormatPr defaultRowHeight="18"/>' + cols + '<sheetData>' + rows.join('') + '</sheetData><mergeCells count="' + merges.length + '">' + merges.map(function (m) { return '<mergeCell ref="' + m + '"/>'; }).join('') + '</mergeCells>' +
+    '<pageMargins left="0.4" right="0.4" top="0.5" bottom="0.5" header="0.3" footer="0.3"/><pageSetup paperSize="9" orientation="landscape" fitToWidth="1" fitToHeight="0"/></worksheet>';
+  var sn = (L.sub || 'الدرجات').replace(/[\[\]:*?\/\\]/g, ' ').trim().slice(0, 31) || 'الدرجات';
+  return zipBlob([
+    { name: '[Content_Types].xml', data: XH + '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>' },
+    { name: '_rels/.rels', data: XH + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>' },
+    { name: 'xl/workbook.xml', data: XH + '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><bookViews><workbookView/></bookViews><sheets><sheet name="' + xe(sn) + '" sheetId="1" r:id="rId1"/></sheets></workbook>' },
+    { name: 'xl/_rels/workbook.xml.rels', data: XH + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>' },
+    { name: 'xl/styles.xml', data: xlsxStyles() },
+    { name: 'xl/worksheets/sheet1.xml', data: sheet }
+  ], 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+}
+function exportXlsx() {
+  var L = getList(); dlBlob('grades-' + (L.sub || 'list') + '-' + today() + '.xlsx', buildXlsx(L)); toast('تم تصدير ملف Excel (.xlsx)');
+}
+
+/* ---------- نماذج البطاقات ---------- */
+function classAvgs(L) { var o = {}; COLS.forEach(function (col) { var sum = 0, n = 0; L.students.forEach(function (s) { var c = calc(s), x = col.inp ? c.v[col.k] : c[col.k]; if (x != null) { sum += x; n++; } }); o[col.k] = n ? R(sum / n) : null; }); return o; }
+function rankInfo(L) { var fs = L.students.map(function (s) { return calc(s).fn; }).filter(function (x) { return x != null; }); return { n: fs.length, of: function (f) { return f == null ? null : 1 + fs.filter(function (x) { return x > f; }).length; } }; }
+function cardKeys(type) { return type === 's1' ? ['m1', 'm2', 'm3', 's1'] : type === 's2' ? ['n1', 'n2', 's2'] : COLS.map(function (c) { return c.k; }); }
+function dateStr() { var cfg = db.cfg || {}; if (cfg.date) return cfg.date; var d = new Date(); return d.getDate() + '/' + (d.getMonth() + 1) + '/' + d.getFullYear(); }
+function cardTitle(type) { return type === 's1' ? 'بطاقة نتيجة الفصل الأول' : type === 's2' ? 'بطاقة نتيجة الفصل الثاني' : 'بطاقة نتيجة الطالب'; }
+function buildModels(L, students) {
+  var cfg = db.cfg || {}, av = classAvgs(L), rk = rankInfo(L), type = cfg.type || 'year', keys = cardKeys(type), ds = dateStr();
+  return students.map(function (s) {
+    var c = calc(s), rows = keys.map(function (k) { var col = COLS.filter(function (x) { return x.k === k; })[0], v = col.inp ? c.v[k] : c[k]; return { label: col.t.replace(/<br>/g, ' '), val: v == null ? '—' : v, avg: av[k] == null ? '' : av[k], grp: col.h }; });
+    var f = c.fn, main = type === 's1' ? c.s1 : type === 's2' ? c.s2 : f;
+    return { L: L, cfg: cfg, name: s.name || '—', rows: rows, main: main, res: type === 'year' ? (f == null ? 'غير مكتمل' : (f >= PASS ? 'ناجح' : 'راسب')) : '', ok: type === 'year' ? (f != null && f >= PASS) : null, rank: type === 'year' ? rk.of(f) : null, rn: rk.n, note: s.note || '', date: ds, type: type, title: cardTitle(type), mainLabel: type === 's1' ? 'معدل الفصل الأول' : type === 's2' ? 'معدل الفصل الثاني' : 'الدرجة النهائية' };
+  });
+}
+function perPage(d) { return d === '4' ? 3 : 2; }
+function infoLine(m) { var L = m.L; return ['المادة: ' + (L.sub || '—'), 'الصف: ' + (L.cls || '—') + (L.sec ? ' / ' + L.sec : ''), 'العام الدراسي: ' + (L.year || '—')].join('   ·   '); }
+function pickStudents(L) {
+  if (cardsWho === 'one') return L.students.filter(function (s) { return s.id === cardsOne; });
+  if (cardsWho === 'sel') return L.students.filter(function (s) { return sel[s.id]; });
+  return L.students.slice();
+}
+
+/* ---- بطاقات HTML (معاينة + PDF) ---- */
+var GC = { h0: '#E8ECF6', h1: '#E3F4EA', h2: '#E1EEF8', h3: '#FCEFD3', h4: '#FBE3E1' };
+function cardHtml1(m, d, brk) {
+  var cfg = m.cfg, h = '<div class="cd cd' + d + (brk ? ' pb' : '') + '">', logo = (cfg.logoOn && cfg.logo) ? '<div class="lg"><img alt="" src="' + esc(cfg.logo) + '"></div>' : '';
+  var resCol = m.ok === true ? '#0E7A4F' : m.ok === false ? '#B3261E' : '#333';
+  var head = cfg.head ? '<div class="hd">' + esc(cfg.head) + '</div>' : '';
+  if (d === '2') h += '<div class="cbar">' + logo + head + '<b style="font-size:17px">' + esc(m.L.school || '') + '</b><div>' + esc(m.title) + '</div></div><div class="info">' + esc(infoLine(m)) + '</div>';
+  else if (d === '4') h += '<div class="c4h">' + logo + '<b>' + esc(m.L.school || '') + '</b> — ' + esc(m.title) + '<br><span>' + esc(infoLine(m)) + '</span></div>';
+  else h += logo + head + '<h4>' + esc(m.L.school || '') + '</h4><div class="tt">' + esc(m.title) + '</div><div class="info">' + esc(infoLine(m)) + '</div>';
+  h += '<div class="nmL">الطالب: <b>' + esc(m.name) + '</b>' + (cfg.rank && m.rank ? ' <span class="rk">الترتيب: ' + m.rank + ' من ' + m.rn + '</span>' : '') + '</div>';
+  var avg = cfg.avg;
+  if (d === '4') {
+    var rr = m.rows, t = '<table>';
+    for (var i = 0; i < rr.length; i += 2) t += '<tr><td class="l">' + esc(rr[i].label) + '</td><td><b>' + rr[i].val + '</b></td>' + (rr[i + 1] ? '<td class="l">' + esc(rr[i + 1].label) + '</td><td><b>' + rr[i + 1].val + '</b></td>' : '<td></td><td></td>') + '</tr>';
+    h += t + '</table>';
+  } else {
+    h += '<table><tr><th>البند</th><th>درجة الطالب</th>' + (avg ? '<th>معدل الصف</th>' : '') + '</tr>';
+    m.rows.forEach(function (r) { h += '<tr><td class="l"' + (d === '2' ? ' style="background:' + GC[r.grp] + '"' : '') + '>' + esc(r.label) + '</td><td><b>' + r.val + '</b></td>' + (avg ? '<td>' + r.avg + '</td>' : '') + '</tr>'; });
+    h += '</table>';
+  }
+  h += '<div class="res" style="' + (d === '2' && m.ok != null ? 'background:' + (m.ok ? '#DDF3E8' : '#FBE3E1') + ';' : '') + 'color:' + resCol + '">' + esc(m.mainLabel) + ': ' + (m.main == null ? '—' : m.main) + (m.res ? ' — النتيجة: ' + esc(m.res) : '') + '</div>';
+  if (m.note) h += '<div class="nt">ملاحظة المعلم: ' + esc(m.note) + '</div>';
+  if (cfg.notes) h += '<div class="nt">' + esc(cfg.notes) + '</div>';
+  if (cfg.sign) h += '<div class="sg"><div>توقيع المعلم<br>' + esc(m.L.teacher || '') + '</div><div>توقيع مدير المدرسة<br>' + esc(cfg.principal || '') + '</div><div>التاريخ<br>' + esc(m.date) + '</div></div>';
+  return h + '</div>';
+}
+function cardsHtml(models, d) { var per = perPage(d); return models.map(function (m, i) { return cardHtml1(m, d, (i + 1) % per === 0 && i < models.length - 1); }).join(''); }
+
+/* ---- بطاقات Word (.docx) ---- */
+var CW = 9800, DOCID = 0;
+function xr(t, o) { o = o || {}; var sz = o.sz || 22; return '<w:r><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial"/>' + (o.b ? '<w:b/><w:bCs/>' : '') + (o.c ? '<w:color w:val="' + o.c + '"/>' : '') + '<w:sz w:val="' + sz + '"/><w:szCs w:val="' + sz + '"/><w:rtl/></w:rPr><w:t xml:space="preserve">' + xe(t) + '</w:t></w:r>'; }
+function xp(runs, o) { o = o || {}; return '<w:p><w:pPr>' + (o.keep ? '<w:keepNext/>' : '') + (o.bd ? '<w:pBdr><w:bottom w:val="single" w:sz="6" w:space="1" w:color="' + o.bd + '"/></w:pBdr>' : '') + '<w:bidi/><w:spacing w:before="' + (o.sb || 0) + '" w:after="' + (o.sa == null ? 40 : o.sa) + '"/><w:jc w:val="' + (o.jc || 'center') + '"/></w:pPr>' + runs + '</w:p>'; }
+function xtc(inner, o) { o = o || {}; return '<w:tc><w:tcPr><w:tcW w:w="' + o.w + '" w:type="dxa"/>' + (o.span ? '<w:gridSpan w:val="' + o.span + '"/>' : '') + (o.fill ? '<w:shd w:val="clear" w:color="auto" w:fill="' + o.fill + '"/>' : '') + '<w:vAlign w:val="center"/></w:tcPr>' + inner + '</w:tc>'; }
+function xbord(style, sz, color, inside) {
+  var b = function (n, st) { return '<w:' + n + ' w:val="' + st + '" w:sz="' + sz + '" w:space="0" w:color="' + color + '"/>'; };
+  var o = style === 'none' ? 'nil' : style, i = inside || 'single';
+  return '<w:tblBorders>' + b('top', o) + b('left', o) + b('bottom', o) + b('right', o) + b('insideH', i) + b('insideV', inside === 'nil' ? 'nil' : (style === 'none' ? 'nil' : 'single')) + '</w:tblBorders>';
+}
+function xtbl(widths, rows, borders, mar) {
+  return '<w:tbl><w:tblPr><w:bidiVisual/><w:tblW w:w="' + widths.reduce(function (a, b) { return a + b; }, 0) + '" w:type="dxa"/><w:jc w:val="center"/>' + borders + '<w:tblLayout w:type="fixed"/><w:tblCellMar><w:top w:w="' + (mar || 30) + '" w:type="dxa"/><w:left w:w="80" w:type="dxa"/><w:bottom w:w="' + (mar || 30) + '" w:type="dxa"/><w:right w:w="80" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>' + widths.map(function (w) { return '<w:gridCol w:w="' + w + '"/>'; }).join('') + '</w:tblGrid>' + rows.map(function (r) { return '<w:tr><w:trPr><w:cantSplit/></w:trPr>' + r + '</w:tr>'; }).join('') + '</w:tbl>';
+}
+var TINY = '<w:p><w:pPr><w:spacing w:before="0" w:after="0" w:line="20" w:lineRule="exact"/></w:pPr></w:p>';
+function xbox(inner, borders) { return xtbl([CW], [xtc(inner + TINY, { w: CW })], borders, 90); }
+function xlogo(cfg) {
+  if (!(cfg.logoOn && cfg.logo)) return '';
+  var cy = 380000, cx = Math.round(cy * (cfg.logoR || 1));
+  return '<w:p><w:pPr><w:bidi/><w:spacing w:before="0" w:after="40"/><w:jc w:val="center"/></w:pPr><w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="' + cx + '" cy="' + cy + '"/><wp:docPr id="' + (++DOCID) + '" name="logo"/><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic><pic:nvPicPr><pic:cNvPr id="0" name="logo.png"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="rIdLogo"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="' + cx + '" cy="' + cy + '"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>';
+}
+function xsign(m, sz) {
+  var w = Math.floor(CW / 3), none = xbord('none', 0, 'FFFFFF', 'nil');
+  var c = function (a, b) { return xtc(xp('', { bd: '444444', sb: 200, sa: 0 }) + xp(xr(a, { sz: sz, b: true }), { sa: 0 }) + xp(xr(b || ' ', { sz: sz }), { sa: 0 }), { w: w }); };
+  return xtbl([w, w, CW - 2 * w], [c('توقيع المعلم', m.L.teacher) + c('توقيع مدير المدرسة', m.cfg.principal) + c('التاريخ', m.date)], none);
+}
+function cardDocx(m, d) {
+  var cfg = m.cfg, avg = cfg.avg, X = [], sz = d === '4' ? 18 : 22, resC = m.ok === true ? '0E7A4F' : m.ok === false ? 'B3261E' : '333333';
+  var info = xp(xr(infoLine(m), { sz: d === '4' ? 16 : 20, c: '56627F' }), { sa: 60 });
+  var nameL = xp(xr('الطالب: ' + m.name, { sz: d === '4' ? 22 : 26, b: true, c: d === '2' ? '1F4FBF' : '000000' }) + (cfg.rank && m.rank ? xr('      الترتيب: ' + m.rank + ' من ' + m.rn, { sz: 20, c: '56627F' }) : ''), { jc: 'start', sb: 60, sa: 80 });
+  var head = cfg.head ? xp(xr(cfg.head, { sz: 18, c: '56627F' }), { sa: 20 }) : '';
+  if (d === '2') {
+    X.push(xtbl([CW], [xtc(xlogo(cfg).replace(/w:bidi\/>/, 'w:bidi/>') + (cfg.head ? xp(xr(cfg.head, { sz: 18, c: 'FFFFFF' }), { sa: 20 }) : '') + xp(xr(m.L.school || '', { sz: 28, b: true, c: 'FFFFFF' }), { sa: 20 }) + xp(xr(m.title, { sz: 24, c: 'FFFFFF' }), { sa: 20 }), { w: CW, fill: '1F4FBF' })], xbord('none', 0, 'FFFFFF', 'nil'), 90));
+    X.push(info);
+  } else if (d === '4') {
+    X.push(xlogo(cfg)); if (cfg.head) X.push(head);
+    X.push(xp(xr(m.L.school || '', { sz: 22, b: true }) + xr('  —  ' + m.title, { sz: 20 }), { sa: 20 })); X.push(info);
+  } else {
+    X.push(xlogo(cfg)); if (cfg.head) X.push(head);
+    X.push(xp(xr(m.L.school || '', { sz: 28, b: true }), { sa: 20 }));
+    X.push(xp(xr(m.title, { sz: 26, b: true }), { sa: 60, bd: d === '1' ? '222222' : 'AAAAAA' }));
+    X.push(info);
+  }
+  X.push(nameL);
+  var bcol = d === '2' ? 'C9D2E8' : d === '3' ? 'DDDDDD' : d === '4' ? '888888' : '222222';
+  var brd = d === '3' ? xbord('none', 0, 'FFFFFF', 'single').replace(/w:val="single" w:sz="0"/g, 'w:val="single" w:sz="4"').replace(/w:color="FFFFFF"/g, 'w:color="DDDDDD"') : xbord('single', 4, bcol);
+  if (d === '4') {
+    var wq = [2300, 2600, 2300, 2600], rr = m.rows, rowsX = [];
+    for (var i = 0; i < rr.length; i += 2) {
+      var a = rr[i], b = rr[i + 1];
+      rowsX.push(xtc(xp(xr(a.label, { sz: 17 }), { jc: 'start', sa: 0 }), { w: wq[0], fill: 'F0F0F0' }) + xtc(xp(xr(String(a.val), { sz: 18, b: true }), { sa: 0 }), { w: wq[1] }) + xtc(b ? xp(xr(b.label, { sz: 17 }), { jc: 'start', sa: 0 }) : xp('', { sa: 0 }), { w: wq[2], fill: b ? 'F0F0F0' : null }) + xtc(b ? xp(xr(String(b.val), { sz: 18, b: true }), { sa: 0 }) : xp('', { sa: 0 }), { w: wq[3] }));
+    }
+    X.push(xtbl(wq, rowsX, brd, 20));
+  } else {
+    var ws = avg ? [5000, 2400, 2400] : [6800, 3000], hf = d === '2' ? '1F4FBF' : d === '3' ? 'F2F2F2' : 'E8ECF6', hc = d === '2' ? 'FFFFFF' : '000000';
+    var hr = xtc(xp(xr('البند', { b: true, c: hc, sz: 20 }), { sa: 0 }), { w: ws[0], fill: hf }) + xtc(xp(xr('درجة الطالب', { b: true, c: hc, sz: 20 }), { sa: 0 }), { w: ws[1], fill: hf }) + (avg ? xtc(xp(xr('معدل الصف', { b: true, c: hc, sz: 20 }), { sa: 0 }), { w: ws[2], fill: hf }) : '');
+    var body = m.rows.map(function (r) {
+      return xtc(xp(xr(r.label, { sz: 18 }), { jc: 'start', sa: 0 }), { w: ws[0], fill: d === '2' ? GC[r.grp].slice(1) : (d === '1' ? 'F4F4F4' : null) }) + xtc(xp(xr(String(r.val), { sz: 20, b: true }), { sa: 0 }), { w: ws[1] }) + (avg ? xtc(xp(xr(String(r.avg), { sz: 18 }), { sa: 0 }), { w: ws[2] }) : '');
+    });
+    X.push(xtbl(ws, [hr].concat(body), brd, 8));
+  }
+  var resTxt = m.mainLabel + ': ' + (m.main == null ? '—' : m.main) + (m.res ? '   —   النتيجة: ' + m.res : '');
+  if (d === '2' && m.ok != null) X.push(xp('', { sa: 40 }), xtbl([CW], [xtc(xp(xr(resTxt, { sz: 24, b: true, c: resC }), { sa: 0 }), { w: CW, fill: m.ok ? 'DDF3E8' : 'FBE3E1' })], xbord('none', 0, 'FFFFFF', 'nil'), 30));
+  else X.push(xp(xr(resTxt, { sz: d === '4' ? 20 : 26, b: true, c: resC }), { sb: 80, sa: 40 }));
+  if (m.note) X.push(xp(xr('ملاحظة المعلم: ' + m.note, { sz: 18 }), { jc: 'start', sa: 20 }));
+  if (cfg.notes) X.push(xp(xr(cfg.notes, { sz: 18, c: '56627F' }), { jc: 'start', sa: 20 }));
+  if (cfg.sign) X.push(xsign(m, d === '4' ? 16 : 20));
+  var inner = X.join('');
+  if (d === '1') return xbox(inner, xbord('double', 12, '222222', 'nil'));
+  if (d === '2') return xbox(inner, xbord('single', 8, '1F4FBF', 'nil'));
+  if (d === '4') return xbox(inner, xbord('single', 6, '666666', 'nil'));
+  return inner;
+}
+function buildDocx(models, d) {
+  var cfg = db.cfg || {}, per = perPage(d), body = ''; DOCID = 0;
+  models.forEach(function (m, i) {
+    var brk = (i + 1) % per === 0 && i < models.length - 1;
+    body += cardDocx(m, d) + (brk ? '<w:p><w:pPr><w:bidi/><w:spacing w:before="0" w:after="0" w:line="20" w:lineRule="exact"/></w:pPr><w:r><w:br w:type="page"/></w:r></w:p>' : xp('', { sa: 60 }));
+  });
+  var doc = XH + '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><w:body>' + body + '<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="500" w:right="1050" w:bottom="500" w:left="1050" w:header="400" w:footer="400" w:gutter="0"/><w:bidi/></w:sectPr></w:body></w:document>';
+  var hasLogo = !!(cfg.logoOn && cfg.logo), files = [
+    { name: '[Content_Types].xml', data: XH + '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>' },
+    { name: '_rels/.rels', data: XH + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>' },
+    { name: 'word/styles.xml', data: XH + '<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial"/><w:sz w:val="22"/><w:szCs w:val="22"/><w:lang w:val="en-US" w:bidi="ar-SA"/></w:rPr></w:rPrDefault></w:docDefaults></w:styles>' },
+    { name: 'word/_rels/document.xml.rels', data: XH + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdSt" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>' + (hasLogo ? '<Relationship Id="rIdLogo" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/logo.png"/>' : '') + '</Relationships>' },
+    { name: 'word/document.xml', data: doc }
+  ];
+  if (hasLogo) { var b64 = cfg.logo.split(',')[1] || '', bin = atob(b64), u = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); files.push({ name: 'word/media/logo.png', data: u }); }
+  return zipBlob(files, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+}
+
+/* ---------- نافذة البطاقات ---------- */
+var sel = {}, cardsWho = 'all', cardsOne = null;
+function cfgGet() { if (!db.cfg) db.cfg = {}; return db.cfg; }
+function openCards(preId) {
+  var L = getList(), cfg = cfgGet();
+  cfg.design = cfg.design || '2'; cfg.type = cfg.type || 'year';
+  if (cfg.rank == null) cfg.rank = true; if (cfg.sign == null) cfg.sign = true; if (cfg.logoOn == null) cfg.logoOn = true;
+  if (preId) { cardsWho = 'one'; cardsOne = preId; } else if (cardsWho === 'one' && !L.students.some(function (s) { return s.id === cardsOne; })) cardsOne = L.students[0] && L.students[0].id;
+  if (!cardsOne && L.students[0]) cardsOne = L.students[0].id;
+  var nsel = L.students.filter(function (s) { return sel[s.id]; }).length;
+  var tiles = [
+    ['1', 'رسمي كلاسيكي', '<div style="border:3px double #222;height:46px;padding:4px"><div style="background:#222;height:5px;margin:2px 10px"></div><div style="background:#bbb;height:4px;margin:3px 0"></div><div style="background:#bbb;height:4px;margin:3px 0"></div></div>'],
+    ['2', 'عصري ملوّن', '<div style="border:1px solid #1F4FBF;height:46px"><div style="background:#1F4FBF;height:12px"></div><div style="display:flex;gap:2px;padding:3px"><i style="flex:1;height:12px;background:#E3F4EA"></i><i style="flex:1;height:12px;background:#E1EEF8"></i><i style="flex:1;height:12px;background:#FCEFD3"></i></div></div>'],
+    ['3', 'بسيط أبيض', '<div style="height:46px;padding:4px"><div style="background:#222;height:5px;margin:2px 0 6px"></div><div style="border-bottom:1px solid #aaa;height:6px"></div><div style="border-bottom:1px solid #aaa;height:6px"></div><div style="border-bottom:1px solid #aaa;height:6px"></div></div>'],
+    ['4', 'مدمج', '<div style="height:46px;display:grid;gap:3px"><div style="border:1px solid #666;background:#eee"></div><div style="border:1px solid #666;background:#eee"></div></div>']
+  ];
+  var ck = function (k, t) { return '<label class="chk"><input type="checkbox" data-cfg="' + k + '"' + (cfg[k] ? ' checked' : '') + '> ' + t + '</label>'; };
+  modal('<h3>بطاقات النتائج</h3><div class="sec">1) اختر التصميم</div><div class="tiles">' + tiles.map(function (t) { return '<label class="tile' + (cfg.design === t[0] ? ' on' : '') + '"><input type="radio" name="des" data-cfg="design" value="' + t[0] + '"' + (cfg.design === t[0] ? ' checked' : '') + ' hidden>' + t[2] + '<span>' + t[1] + '</span></label>'; }).join('') + '</div>' +
+    '<div class="sec">2) لمن تُنشأ البطاقات؟</div><div class="row"><label class="chk"><input type="radio" name="cw" data-cw="all"' + (cardsWho === 'all' ? ' checked' : '') + '> كل الطلاب</label>' +
+    '<label class="chk"><input type="radio" name="cw" data-cw="one"' + (cardsWho === 'one' ? ' checked' : '') + '> طالب واحد:</label><select class="in" id="cw-one" style="max-width:200px">' + L.students.map(function (s) { return '<option value="' + esc(s.id) + '"' + (s.id === cardsOne ? ' selected' : '') + '>' + esc(s.name || 'بدون اسم') + '</option>'; }).join('') + '</select>' +
+    '<label class="chk"><input type="radio" name="cw" data-cw="sel"' + (cardsWho === 'sel' ? ' checked' : '') + '> المحدّدون بالجدول (' + nsel + ')</label></div>' +
+    '<div class="sec">3) نوع البطاقة</div><select class="in" data-cfg="type"><option value="year"' + (cfg.type === 'year' ? ' selected' : '') + '>سنوية (كل الدرجات والنتيجة النهائية)</option><option value="s1"' + (cfg.type === 's1' ? ' selected' : '') + '>الفصل الأول فقط</option><option value="s2"' + (cfg.type === 's2' ? ' selected' : '') + '>الفصل الثاني فقط</option></select>' +
+    '<div class="sec">4) خيارات</div><div class="row">' + ck('rank', 'ترتيب الطالب على الصف') + ck('avg', 'معدل الصف للمقارنة') + ck('sign', 'خانات التوقيع والتاريخ') + '</div>' +
+    '<div class="g2"><div><label class="f">سطر الترويسة</label><input class="in" data-cfg="head" value="' + esc(cfg.head || '') + '" placeholder="مثال: وزارة التربية — مديرية تربية نينوى"></div><div><label class="f">مدير المدرسة</label><input class="in" data-cfg="principal" value="' + esc(cfg.principal || '') + '" placeholder="يظهر تحت خانة التوقيع"></div><div><label class="f">ملاحظات (تظهر بكل بطاقة)</label><input class="in" data-cfg="notes" value="' + esc(cfg.notes || '') + '" placeholder="اختياري"></div><div><label class="f">التاريخ</label><input class="in" data-cfg="date" value="' + esc(cfg.date || '') + '" placeholder="فارغ = تاريخ اليوم"></div></div>' +
+    '<div class="row" style="margin-top:6px">' + (cfg.logo ? '<img alt="" src="' + esc(cfg.logo) + '" style="height:36px">' + ck('logoOn', 'إظهار الشعار') + '<button class="btn-l btn-d" data-a="logo-del">حذف الشعار</button>' : '') + '<label class="btn-l" style="cursor:pointer">🖼️ ' + (cfg.logo ? 'تغيير' : 'إضافة') + ' شعار المدرسة<input type="file" id="f-logo" accept="image/*" hidden></label></div>' +
+    '<div class="row" style="margin-top:10px"><button class="btn" data-a="cards-docx">حفظ ملف Word (.docx)</button><button class="btn-l" data-a="cards-prev">معاينة</button><button class="btn-l" data-a="cards-pdf">حفظ PDF / طباعة</button><button class="btn-l" data-a="close">إغلاق</button></div>');
+}
+function cardsModels() {
+  var L = getList(), st = pickStudents(L); if (!st.length) { toast(cardsWho === 'sel' ? 'ما حددت أي طالب بالجدول' : 'ما كو طلاب'); return null; }
+  return buildModels(L, st);
+}
+function setPage(o) { var s = $('pgcss'); if (!s) { s = document.createElement('style'); s.id = 'pgcss'; document.head.appendChild(s); } s.textContent = '@page{size:A4 ' + o + ';margin:10mm}'; }
+function logoFromFile(file) {
+  var r = new FileReader();
+  r.onload = function () {
+    var img = new Image();
+    img.onload = function () {
+      var max = 260, k = Math.min(1, max / Math.max(img.width, img.height)), cv = document.createElement('canvas');
+      cv.width = Math.round(img.width * k); cv.height = Math.round(img.height * k); cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+      var c = cfgGet(); c.logo = cv.toDataURL('image/png'); c.logoR = cv.width / cv.height; c.logoOn = true; save(); openCards();
+    };
+    img.onerror = function () { toast('ما كدرت أقرأ الصورة'); };
+    img.src = r.result;
+  };
+  r.readAsDataURL(file);
+}
+function openNote(id) {
+  var s = getList().students.filter(function (x) { return x.id === id; })[0]; if (!s) return;
+  modal('<h3>ملاحظة المعلم — ' + esc(s.name) + '</h3><p class="note">تظهر بالبطاقة تحت الدرجات.</p><textarea id="nt-t" maxlength="300">' + esc(s.note || '') + '</textarea><div class="row" style="margin-top:8px"><button class="btn" data-a="note-ok" data-id="' + esc(id) + '">حفظ</button><button class="btn-l" data-a="close">إلغاء</button></div>');
+}
+function doInstall() {
+  if (deferredInstall) { deferredInstall.prompt(); deferredInstall = null; return; }
+  var ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  modal('<h3>تثبيت التطبيق</h3>' + (ios ? '<ol><li>افتح الرابط من Safari</li><li>اضغط زر المشاركة (المربع والسهم)</li><li>اختر «إضافة إلى الشاشة الرئيسية»</li></ol>' : '<ol><li>افتح الرابط من Chrome</li><li>اضغط قائمة المتصفح (⋮)</li><li>اختر «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية»</li></ol>') + '<p class="note">بعد التثبيت يفتح مثل أي تطبيق، حتى بدون إنترنت.</p><button class="btn-l" data-a="close">تمام</button>');
 }
 
 /* ---------- أحداث ---------- */
@@ -467,26 +796,34 @@ document.addEventListener('click', function (e) {
   }
   else if (a === 'import') openImport();
   else if (a === 'imp-ok') { var tx = $('imp-t').value; closeModal(); doImport(tx); }
-  else if (a === 'export') exportCsv();
+  else if (a === 'export') exportXlsx();
   else if (a === 'print') printTable();
   else if (a === 'sort') { L.students.sort(function (x, y) { return x.name.localeCompare(y.name, 'ar'); }); save(); renderTable(); toast('تم الترتيب أبجدياً'); }
   else if (a === 'cards') openCards();
-  else if (a === 'cards-ok') {
-    var w = document.querySelector('[name="cw"]:checked').value;
-    closeModal();
-    downloadCards(L.students.filter(function (s) { var f = calc(s).fn; return w === 'all' ? true : w === 'pass' ? (f != null && f >= PASS) : (f != null && f < PASS); }), 'result-cards-' + today() + '.doc');
-  }
-  else if (a === 'card1') { var tr = t.closest('tr'), st = L.students.filter(function (s) { return s.id === tr.getAttribute('data-id'); })[0]; if (st) downloadCards([st], 'card-' + today() + '.doc'); }
+  else if (a === 'card1') { openCards(t.closest('tr').getAttribute('data-id')); }
+  else if (a === 'cards-docx') { var ms = cardsModels(); if (ms) { dlBlob('result-cards-' + today() + '.docx', buildDocx(ms, cfgGet().design)); toast('تم إنشاء ملف Word (' + ms.length + ' بطاقة)'); } }
+  else if (a === 'cards-prev') { var mp = cardsModels(); if (mp) { $('pvb').innerHTML = cardsHtml(mp.slice(0, 6), cfgGet().design) + (mp.length > 6 ? '<p class="note" style="text-align:center">معاينة أول 6 بطاقات من ' + mp.length + '</p>' : ''); $('pv').classList.add('on'); } }
+  else if (a === 'pv-close') $('pv').classList.remove('on');
+  else if (a === 'cards-pdf') { var mq = cardsModels(); if (mq) { $('print-root').innerHTML = cardsHtml(mq, cfgGet().design); setPage('portrait'); setTimeout(function () { window.print(); }, 200); } }
+  else if (a === 'logo-del') { var c0 = cfgGet(); c0.logo = ''; save(); openCards(); }
+  else if (a === 'note') openNote(t.closest('tr').getAttribute('data-id'));
+  else if (a === 'note-ok') { var ns = L.students.filter(function (x) { return x.id === t.getAttribute('data-id'); })[0]; if (ns) { ns.note = $('nt-t').value.trim(); save(); } closeModal(); toast('تم حفظ الملاحظة'); }
   else if (a === 'del-st') {
     var tr2 = t.closest('tr'), id = tr2.getAttribute('data-id'), s2 = L.students.filter(function (s) { return s.id === id; })[0];
     if (s2 && confirm('حذف الطالب «' + (s2.name || 'بدون اسم') + '»؟')) { L.students = L.students.filter(function (s) { return s.id !== id; }); save(); renderTable(); }
   }
-  else if (a === 'install') { if (deferredInstall) { deferredInstall.prompt(); deferredInstall = null; $('b-install').hidden = true; } }
+  else if (a === 'install') doInstall();
 });
 $('ov').addEventListener('click', function (e) { if (e.target === $('ov')) closeModal(); });
 document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeModal(); });
 document.addEventListener('change', function (e) {
   var t = e.target;
+  if (t.hasAttribute('data-cfg')) { setCfg(t); return; }
+  if (t.hasAttribute('data-cw')) { cardsWho = t.getAttribute('data-cw'); return; }
+  if (t.id === 'cw-one') { cardsOne = t.value; cardsWho = 'one'; var r1 = document.querySelector('[data-cw="one"]'); if (r1) r1.checked = true; return; }
+  if (t.id === 'f-logo' && t.files[0]) { logoFromFile(t.files[0]); return; }
+  if (t.hasAttribute('data-sel')) { var id1 = t.closest('tr').getAttribute('data-id'); if (t.checked) sel[id1] = 1; else delete sel[id1]; return; }
+  if (t.hasAttribute('data-selall')) { visible(getList()).forEach(function (x) { if (t.checked) sel[x.id] = 1; else delete sel[x.id]; }); document.querySelectorAll('[data-sel]').forEach(function (c) { c.checked = t.checked; }); toast(t.checked ? 'تم تحديد الطلاب الظاهرين' : 'تم إلغاء التحديد'); return; }
   if (t.id === 'list-sel') { db.cur = t.value; save(); renderAll(); }
   else if (t.id === 'f-restore' && t.files[0]) {
     var r = new FileReader();
@@ -504,8 +841,9 @@ document.addEventListener('change', function (e) {
 });
 document.addEventListener('input', function (e) {
   var t = e.target, L = getList();
+  if (t.hasAttribute('data-cfg') && t.type === 'text') { setCfg(t); return; }
   if (t.id === 'q') { query = t.value; renderTable(); return; }
-  if (t.hasAttribute('data-m')) { L[t.getAttribute('data-m')] = t.value; save(); renderLists(); return; }
+  if (t.hasAttribute('data-m')) { L[t.getAttribute('data-m')] = t.value; if (t.getAttribute('data-m') === 'pass') { syncPass(); renderTable(); } save(); renderLists(); return; }
   var tr = t.closest && t.closest('tr[data-id]'); if (!tr) return;
   var s = L.students.filter(function (x) { return x.id === tr.getAttribute('data-id'); })[0]; if (!s) return;
   if (t.hasAttribute('data-nm')) { s.name = t.value; save(); return; }
@@ -536,7 +874,14 @@ document.addEventListener('paste', function (e) {
   });
   save(); renderTable(); toast('تم اللصق');
 });
-window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); deferredInstall = e; $('b-install').hidden = false; });
+window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); deferredInstall = e; });
+window.addEventListener('appinstalled', function () { $('b-install').hidden = true; });
+try { if ((window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone) $('b-install').hidden = true; } catch (e) {}
+function setCfg(t) {
+  var k = t.getAttribute('data-cfg'), c = cfgGet();
+  if (t.type === 'checkbox') c[k] = t.checked; else if (t.type === 'radio') { if (!t.checked) return; c[k] = t.value; document.querySelectorAll('.tile').forEach(function (x) { x.classList.toggle('on', x.contains(t)); }); } else c[k] = t.value;
+  save();
+}
 window.addEventListener('beforeunload', function () { try { localStorage.setItem(KEY, JSON.stringify(db)); } catch (e) {} });
 
 load(); renderAll();
