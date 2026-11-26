@@ -1,0 +1,33 @@
+{
+  "name": "سجل درجات الطلاب",
+  "short_name": "سجل الدرجات",
+  "description": "إدارة أسماء الطلاب ودرجاتهم ومعدلاتهم",
+  "start_url": "grades.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "dir": "rtl",
+  "lang": "ar",
+  "background_color": "#F3F5FA",
+  "theme_color": "#1F4FBF",
+  "icons": [
+    {
+      "src": "icon-grades-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-grades-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-grades-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
