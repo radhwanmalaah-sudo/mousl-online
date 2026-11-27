@@ -483,9 +483,18 @@ function parseSheet(xml) {
   var rows = [];
   var re = /<row[^>]*>([\s\S]*?)<\/row>/g, m;
   while ((m = re.exec(xml))) {
-    var cells = [], cre = /<c[^>]*>(?:<v>([^<]*)<\/v>)?/g, cm;
+    var cells = [];
+    var cre = /<c[^>]*?(?: t="inlineStr")?[^>]*>([\s\S]*?)<\/c>/g, cm;
     while ((cm = cre.exec(m[1]))) {
-      cells.push(cm[1] || '');
+      var inner = cm[1] || '';
+      var val = '';
+      var tm = /<t[^>]*>([^<]*)<\/t>/.exec(inner);
+      if (tm) val = tm[1];
+      else {
+        var vm = /<v>([^<]*)<\/v>/.exec(inner);
+        if (vm) val = vm[1];
+      }
+      cells.push(val);
     }
     if (cells.length) rows.push(cells);
   }
@@ -495,10 +504,10 @@ function importXlsx(buf) {
   try {
     var files = unzip(buf);
     var sheet = files['xl/worksheets/sheet1.xml'];
-    if (!sheet) { toast('ما لقيت ورقة في الملف'); return; }
+    if (!sheet) { toast('ما لقيت ورقة في الملف. تأكد إن الملف مصدّر من هذه الصفحة.'); return; }
     var xml = new TextDecoder().decode(sheet);
     var rows = parseSheet(xml);
-    if (!rows.length) { toast('الملف فاضي'); return; }
+    if (!rows.length) { toast('الملف فاضي أو التنسيق غير مدعوم. صدّر من هذه الصفحة ثم استورد.'); return; }
     var L = getList(), added = 0, skipped = 0, room = roomLeft();
     // skip header rows (look for first row that has a name-like first cell)
     var start = 0;
