@@ -28,7 +28,7 @@
     ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true');
     ov.innerHTML = '<div class="mi-c"><div class="mi-a"></div><h2 class="mi-t"></h2><p class="mi-p"></p><div class="mi-d"></div><div class="mi-b"><button type="button" class="mi-s"></button><button type="button" class="mi-n"></button></div></div>';
     document.body.appendChild(ov);
-    var q = document.createElement('button'); q.type = 'button'; q.className = 'mi-q'; q.textContent = '؟ كيف يشتغل'; q.style.setProperty('--mi', acc); document.body.appendChild(q);
+    var q = document.createElement('button'); q.type = 'button'; q.className = 'mi-q'; q.textContent = '؟ كيف يشتغل'; q.style.setProperty('--mi', acc); if (o.bottom) q.style.bottom = o.bottom; document.body.appendChild(q);
     var S = o.slides, el = function (c) { return ov.querySelector(c); };
     function draw() {
       var s = S[i];

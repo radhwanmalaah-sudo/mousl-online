@@ -60,6 +60,7 @@ h2 { font-size: 13px; font-weight: 600; letter-spacing: 0.04em; color: var(--ink
 .btns { display: flex; gap: 8px; flex-wrap: wrap; }
 .f { font-size: 12px; font-weight: 600; margin-bottom: 4px; display: block; }
 .in { width: 100%; background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+.in[readonly] { background: var(--surface-2); color: var(--ink-2); cursor: not-allowed; }
 .in.code { direction: ltr; text-align: center; font-size: 22px; letter-spacing: 0.25em; font-weight: 600; }
 .err { color: var(--tea); font-size: 13px; min-height: 1.2em; margin: 0; }
 .note { color: var(--ink-2); font-size: 13px; margin: 6px 0; }
@@ -131,7 +132,8 @@ h2 { font-size: 13px; font-weight: 600; letter-spacing: 0.04em; color: var(--ink
     </div>
 
     <div id="pane-add" role="tabpanel" hidden>
-      <h2>إضافة دين جديد</h2>
+      <h2 id="addh">إضافة دين جديد</h2>
+      <div class="card" id="prevbox" hidden></div>
       <form id="f-add" class="g" novalidate>
         <div><label class="f" for="dname">اسم الزبون</label>
           <input class="in" id="dname" maxlength="40" required placeholder="مثال: أحمد"></div>
@@ -621,7 +623,26 @@ $('f-add').addEventListener('submit', function (e) {
   }
 });
 
+function setSaleMode(nd) {
+  var box = $('prevbox'), n = $('dname'), p = $('dphone');
+  n.readOnly = p.readOnly = !!nd;
+  $('addh').textContent = nd ? 'بيع جديد' : 'إضافة دين جديد';
+  if (!nd) { box.hidden = true; box.innerHTML = ''; return; }
+  var key = function (v) { return String(v || '').replace(/\s+/g, ' ').trim().toLowerCase(); };
+  var rel = debts.filter(function (x) { return key(x.name) === key(nd.name) && (!nd.phone || !x.phone || x.phone === nd.phone); });
+  var open = rel.filter(function (x) { return remaining(x) > 0; });
+  var tot = open.reduce(function (a, x) { return a + remaining(x); }, 0);
+  var cur = nd.currency || (ad && ad.currency) || 'iqd';
+  box.innerHTML = '<div class="row"><b>الحساب السابق</b><span class="price">' + money(tot, cur) + '</span></div>' +
+    (open.length ? open.slice(0, 8).map(function (x) {
+      var dt = x.date || (x.createdAt ? dayKey(x.createdAt) : '');
+      return '<div class="meta">' + esc(x.item || '—') + ' · متبقي ' + money(remaining(x), cur) + (dt ? ' · ' + esc(dt) : '') + '</div>';
+    }).join('') + (open.length > 8 ? '<div class="meta">و' + (open.length - 8) + ' أخرى…</div>' : '') : '<div class="meta">ما عليه ديون سابقة مفتوحة.</div>') +
+    '<div class="meta">الاسم والرقم ثابتين هنا. لتغييرهم استخدم «تعديل» من القائمة.</div>';
+  box.hidden = false;
+}
 function resetAddForm() {
+  setSaleMode(null);
   $('dname').value = ''; $('dphone').value = ''; $('ditem').value = '';
   $('damount').value = ''; $('dcost').value = ''; $('dnote').value = ''; $('ddate').value = '';
   $('dedit').value = '';
@@ -633,7 +654,7 @@ document.addEventListener('click', function (e) {
   var t = e.target.closest('[data-act]');
   if (!t) return;
   var a = t.dataset.act, id = t.dataset.id;
-  if (a === 'tab') { showTab(t.dataset.tab); return; }
+  if (a === 'tab') { if (t.dataset.tab === 'add' && !$('prevbox').hidden) resetAddForm(); showTab(t.dataset.tab); return; }
   if (a === 'logout') { logout(); return; }
   if (a === 'install') { installApp($('instmsg')); return; }
   if (a === 'export-csv') { doExport('download'); return; }
@@ -682,6 +703,7 @@ document.addEventListener('click', function (e) {
     $('dcost').value = ed.cost || '';
     $('ddate').value = ed.date || (ed.createdAt ? dayKey(ed.createdAt) : '');
     $('dnote').value = ed.note || '';
+    setSaleMode(null);
     $('dedit').value = ed.id;
     $('f-add-btn').textContent = 'حفظ التعديل';
     $('aerr').textContent = '';
@@ -725,6 +747,7 @@ document.addEventListener('click', function (e) {
     $('dnote').value = '';
     $('dedit').value = '';
     $('f-add-btn').textContent = 'حفظ بيع جديد';
+    setSaleMode(nd);
     $('aerr').textContent = '';
     showTab('add');
     window.scrollTo(0, 0);
@@ -808,6 +831,15 @@ var PV = new URLSearchParams(location.search).get('pv') || '';
   }
   if ($('ddate') && !$('ddate').value) $('ddate').value = dayKey();
 })();
+</script>
+<script src="intro.js"></script>
+<script>
+try { MIntro.mount({ key: "debts", accent: "#A6311A", last: "ابدأ", slides: [
+  { art: "app", t: "دفتر ديوني", p: "سجّل ديون زبائنك بدل الدفتر الورق: الاسم والمادة والمبلغ." },
+  { art: "grid", t: "تسديد وبيع جديد", p: "سجّل التسديدات (كاش أو إلكتروني)، وكرّر البيع لنفس الزبون ويظهر لك حسابه السابق." },
+  { art: "bell", t: "تذكير بواتساب", p: "ذكّر الزبون برسالة واتساب جاهزة فيها مبلغه المتبقي." },
+  { art: "doc", t: "نسخة احتياطية", p: "صدّر ديونك Excel أو اطبع تقريراً، ويشتغل حتى لو انقطع الإنترنت لفترة قصيرة." }
+] }); } catch (e) {}
 </script>
 </body>
 </html>

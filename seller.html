@@ -886,5 +886,14 @@ ensureAuth().then(function () {
 
 </script>
 <script>try { if (window.MPush) MPush.mount({ slot: 'push-slot', label: '🔔 فعّل إشعارات الطلبات' }); } catch (e) {}</script>
+<script src="intro.js"></script>
+<script>
+try { MIntro.mount({ key: "seller", accent: "#A6311A", last: "ابدأ", bottom: "78px", slides: [
+  { art: "app", t: "تطبيق البائع", p: "ادخل بكودك، وزبائن منطقتك يشوفونك ويطلبون منك مباشرة." },
+  { art: "doc", t: "قائمتك وأسعارك", p: "اختر المشروبات اللي تبيعها وحدد سعر كل واحد." },
+  { art: "bell", t: "متاح أو مو متاح", p: "فعّل حالة «متاح» حتى تظهر للزبائن وتوصلك طلباتهم، وطفّيها إذا خلصت." },
+  { art: "grid", t: "سجل مبيعاتك", p: "تتابع طلباتك وإحصائيات مبيعاتك من التطبيق." }
+] }); } catch (e) {}
+</script>
 </body>
 </html>

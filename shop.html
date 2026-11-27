@@ -1147,5 +1147,14 @@ var PV = new URLSearchParams(location.search).get('pv') || '';
 })();
 </script>
 <script>try { if (window.MPush) MPush.mount({ slot: 'push-slot', label: '🔔 فعّل إشعارات الطلبات والنداءات', skip: !!PV }); } catch (e) {}</script>
+<script src="intro.js"></script>
+<script>
+try { MIntro.mount({ key: "shop", accent: "#A6311A", last: "ابدأ", slides: [
+  { art: "app", t: "إدارة محلك أو صالتك", p: "ادخل بكود الدخول اللي وصلك من صاحب التطبيق، وتدير كل شي من جوالك." },
+  { art: "doc", t: "قائمتك ومنتجاتك", p: "أضف منتجاتك وأسعارها، وعدّلها أو أوقفها بأي وقت." },
+  { art: "bell", t: "الطلبات والنداءات", p: "تصلك طلبات الزبائن ونداءات الطاولات (نادل أو حساب) مباشرة، وتؤكد الدفع وتنهي الحساب." },
+  { art: "qr", t: "QR للطاولات", p: "اطبع QR كل طاولة وعلّقه، والزبون يمسحه ويطلب من قائمتك." }
+] }); } catch (e) {}
+</script>
 </body>
 </html>
