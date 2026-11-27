@@ -437,14 +437,91 @@ function openCopyNames() {
     '<div class="row"><button class="btn" data-a="copy-ok">نسخ</button><button class="btn-l" data-a="close">إلغاء</button></div>');
 }
 function openImport() {
-  modal('<h3>استيراد من Excel</h3><p class="note">اختر ملف Excel (.xlsx) مصدّر من هذه الصفحة، أو أي ملف فيه العمود الأول اسم الطالب والأعمدة التالية الدرجات بالترتيب.</p>' +
-    '<div class="row" style="margin-top:8px"><label class="btn" style="cursor:pointer">📂 اختيار ملف Excel<input type="file" id="f-xlsx" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden></label><button class="btn-l" data-a="close">إلغاء</button></div>' +
-    '<p class="note" style="margin-top:10px">أو الصق نص (اسم بكل سطر أو مفصول بـ Tab):</p>' +
+  modal('<h3>استيراد طلاب</h3><p class="note">الصق الأسماء (اسم بكل سطر)، أو الصق من Excel: الاسم ثم الدرجات مفصولة بـ Tab بالترتيب (شهر1، شهر2، شهر3، نصف السنة، ف2 شهر1، ف2 شهر2، الامتحان). أو اختر ملف CSV/TXT أو ملف Excel (.xlsx) مصدر من نفس البرنامج.</p>' +
     '<textarea id="imp-t" placeholder="أحمد علي&#10;زينب حسن"></textarea>' +
-    '<div class="row" style="margin-top:8px"><button class="btn" data-a="imp-ok">استيراد النص</button></div>');
+    '<div class="row" style="margin-top:8px"><label class="btn-l" style="cursor:pointer">📂 اختيار ملف<input type="file" id="f-imp" accept=".xlsx,.csv,.txt,text/plain,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden></label><button class="btn" data-a="imp-ok">استيراد</button><button class="btn-l" data-a="close">إلغاء</button></div>');
 }
 /* ---------- استيراد / تصدير ---------- */
 function splitLine(line) { return line.indexOf('\t') >= 0 ? line.split('\t') : line.split(','); }
+
+/* ---------- قراءة ملف Excel المصدر من البرنامج ---------- */
+function colToIdx(col) {
+  var n = 0;
+  for (var i = 0; i < col.length; i++) n = n * 26 + (col.charCodeAt(i) - 64);
+  return n - 1;
+}
+function extractZipEntry(u8, entryName) {
+  var nameBytes = new TextEncoder().encode(entryName);
+  var i = 0;
+  while (i + 30 < u8.length) {
+    if (u8[i] === 0x50 && u8[i+1] === 0x4b && u8[i+2] === 0x03 && u8[i+3] === 0x04) {
+      var nameLen = u8[i+26] | (u8[i+27] << 8);
+      var extraLen = u8[i+28] | (u8[i+29] << 8);
+      var compSize = u8[i+18] | (u8[i+19] << 8) | (u8[i+20] << 16) | (u8[i+21] << 24);
+      var method = u8[i+8] | (u8[i+9] << 8);
+      var start = i + 30 + nameLen + extraLen;
+      var name = new TextDecoder().decode(u8.subarray(i + 30, i + 30 + nameLen));
+      if (name === entryName) {
+        if (method !== 0) return null; // only stored (no compression)
+        return new TextDecoder().decode(u8.subarray(start, start + compSize));
+      }
+      i = start + compSize;
+    } else {
+      i++;
+    }
+  }
+  return null;
+}
+function getCellValue(c) {
+  var t = c.getAttribute('t');
+  if (t === 'inlineStr') {
+    var is = c.getElementsByTagName('is')[0];
+    if (!is) return '';
+    var tt = is.getElementsByTagName('t')[0];
+    return tt ? (tt.textContent || '') : '';
+  }
+  var v = c.getElementsByTagName('v')[0];
+  return v ? (v.textContent || '') : '';
+}
+function parseOwnXlsx(buf) {
+  try {
+    var u8 = new Uint8Array(buf);
+    var xml = extractZipEntry(u8, 'xl/worksheets/sheet1.xml');
+    if (!xml) return null;
+    var doc = new DOMParser().parseFromString(xml, 'application/xml');
+    var rows = doc.getElementsByTagName('row');
+    var lines = [];
+    // INPUTS columns (absolute 0-based): name=1, then m1=2,m2=3,m3=4,hy=6,n1=7,n2=8,ex=11
+    var inputCols = [2, 3, 4, 6, 7, 8, 11];
+    for (var i = 0; i < rows.length; i++) {
+      var row = rows[i];
+      var rnum = parseInt(row.getAttribute('r') || '0', 10);
+      if (rnum < 6) continue;
+      var cells = row.getElementsByTagName('c');
+      var byCol = {};
+      for (var j = 0; j < cells.length; j++) {
+        var c = cells[j];
+        var ref = c.getAttribute('r') || '';
+        var colLetters = ref.replace(/[0-9]/g, '');
+        if (!colLetters) continue;
+        var colIdx = colToIdx(colLetters);
+        byCol[colIdx] = getCellValue(c);
+      }
+      var name = (byCol[1] || '').trim();
+      if (!name || name === 'معدل الصف') continue;
+      var parts = [name];
+      inputCols.forEach(function (ci) {
+        var v = byCol[ci];
+        parts.push(v == null || v === '' ? '' : String(v));
+      });
+      lines.push(parts.join('\t'));
+    }
+    return lines.length ? lines.join('\n') : null;
+  } catch (e) {
+    console.error(e);
+    return null;
+  }
+}
 function doImport(text) {
   var L = getList(), added = 0, skipped = 0, room = roomLeft();
   text.replace(/\r/g, '').split('\n').forEach(function (line) {
@@ -458,82 +535,6 @@ function doImport(text) {
   });
   save(); renderTable(); toast('تمت إضافة ' + added + ' طالب' + (skipped ? ' (تخطيت ' + skipped + ' بسبب الحد)' : '')); if (skipped) openLic('limit');
 }
-
-/* ---- استيراد من Excel ---- */
-function unzip(buf) {
-  var dv = new DataView(buf), files = {}, i = 0;
-  while (i < buf.byteLength - 4) {
-    var sig = dv.getUint32(i, true);
-    if (sig !== 0x04034b50) break;
-    var comp = dv.getUint16(i + 8, true);
-    var clen = dv.getUint32(i + 18, true);
-    var ulen = dv.getUint32(i + 22, true);
-    var nlen = dv.getUint16(i + 26, true);
-    var elen = dv.getUint16(i + 28, true);
-    var name = new TextDecoder().decode(new Uint8Array(buf, i + 30, nlen));
-    var dataStart = i + 30 + nlen + elen;
-    if (comp === 0) {
-      files[name] = new Uint8Array(buf, dataStart, clen);
-    }
-    i = dataStart + clen;
-  }
-  return files;
-}
-function parseSheet(xml) {
-  var rows = [];
-  var re = /<row[^>]*>([\s\S]*?)<\/row>/g, m;
-  while ((m = re.exec(xml))) {
-    var cells = [];
-    var cre = /<c[^>]*?(?: t="inlineStr")?[^>]*>([\s\S]*?)<\/c>/g, cm;
-    while ((cm = cre.exec(m[1]))) {
-      var inner = cm[1] || '';
-      var val = '';
-      var tm = /<t[^>]*>([^<]*)<\/t>/.exec(inner);
-      if (tm) val = tm[1];
-      else {
-        var vm = /<v>([^<]*)<\/v>/.exec(inner);
-        if (vm) val = vm[1];
-      }
-      cells.push(val);
-    }
-    if (cells.length) rows.push(cells);
-  }
-  return rows;
-}
-function importXlsx(buf) {
-  try {
-    var files = unzip(buf);
-    var sheet = files['xl/worksheets/sheet1.xml'];
-    if (!sheet) { toast('ما لقيت ورقة في الملف. تأكد إن الملف مصدّر من هذه الصفحة.'); return; }
-    var xml = new TextDecoder().decode(sheet);
-    var rows = parseSheet(xml);
-    if (!rows.length) { toast('الملف فاضي أو التنسيق غير مدعوم. صدّر من هذه الصفحة ثم استورد.'); return; }
-    var L = getList(), added = 0, skipped = 0, room = roomLeft();
-    // skip header rows (look for first row that has a name-like first cell)
-    var start = 0;
-    for (var r = 0; r < rows.length; r++) {
-      var first = (rows[r][0] || '').trim();
-      if (first && !/اسم|طالب|المدرسة|المادة|الصف/.test(first) && isNaN(Number(first))) { start = r; break; }
-    }
-    for (var i = start; i < rows.length; i++) {
-      var cells = rows[i];
-      var name = (cells[0] || '').trim();
-      if (!name) continue;
-      if (added >= room) { skipped++; continue; }
-      var s = blank(name);
-      for (var c = 0; c < INPUTS.length; c++) {
-        var v = cells[c + 1];
-        if (v != null && v !== '' && num(v) != null) s[INPUTS[c]] = String(num(v));
-      }
-      L.students.push(s); added++;
-    }
-    save(); renderTable();
-    toast('تم استيراد ' + added + ' طالب' + (skipped ? ' (تخطيت ' + skipped + ')' : ''));
-    if (skipped) openLic('limit');
-    closeModal();
-  } catch (e) { toast('ما قدرت أقرأ الملف: ' + (e.message || '')); }
-}
-
 function printTable() {
   var L = getList(); setPage('landscape');
   var h = '<h1>سجل درجات الطلاب — ' + esc(listLabel(L)) + '</h1><div>المدرسة: ' + esc(L.school) + ' · المعلم: ' + esc(L.teacher) + ' · العام الدراسي: ' + esc(L.year) + '</div>';
@@ -979,7 +980,6 @@ document.addEventListener('click', function (e) {
     renderTable(); var inp = document.querySelectorAll('[data-nm]'); if (inp.length) { var last = inp[inp.length - 1]; last.focus(); last.scrollIntoView({ block: 'center' }); }
   }
   else if (a === 'import') openImport();
-  else if (a === 'imp-ok') { var tx = $('imp-t') && $('imp-t').value; if (tx) doImport(tx); }
   else if (a === 'imp-ok') { var tx = $('imp-t').value; closeModal(); doImport(tx); }
   else if (a === 'export') exportXlsx();
   else if (a === 'print') printTable();
@@ -1025,7 +1025,27 @@ document.addEventListener('change', function (e) {
     };
     r.readAsText(t.files[0]);
   }
-  else if (t.id === 'f-imp' && t.files[0]) { var r2 = new FileReader(); r2.onload = function () { $('imp-t').value = String(r2.result).replace(/^﻿/, ''); }; r2.readAsText(t.files[0]); }
+  else if (t.id === 'f-imp' && t.files[0]) {
+    var file = t.files[0];
+    var name = (file.name || '').toLowerCase();
+    if (name.endsWith('.xlsx') || file.type.indexOf('spreadsheet') >= 0) {
+      var r3 = new FileReader();
+      r3.onload = function () {
+        var text = parseOwnXlsx(r3.result);
+        if (text) {
+          $('imp-t').value = text;
+          toast('تم قراءة ' + text.split('\n').length + ' طالب من ملف Excel');
+        } else {
+          toast('تعذر قراءة ملف Excel. تأكد إنه مصدر من نفس البرنامج.');
+        }
+      };
+      r3.readAsArrayBuffer(file);
+    } else {
+      var r2 = new FileReader();
+      r2.onload = function () { $('imp-t').value = String(r2.result).replace(/^﻿/, ''); };
+      r2.readAsText(file);
+    }
+  }
 });
 document.addEventListener('input', function (e) {
   var t = e.target, L = getList();
