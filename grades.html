@@ -344,7 +344,7 @@ function rowHtml(s, i) {
       var f = c.fn; h += '<td class="fin ' + (f == null ? '' : f >= PASS ? 'ok' : 'no') + '" data-c="fn">' + (f == null ? '' : f) + '</td>';
     } else { var x = c[col.k]; h += '<td class="calc" data-c="' + col.k + '">' + (x == null ? '' : x) + '</td>'; }
   });
-  return h + '<td><button class="ib" data-a="note" title="ملاحظة للبطاقة">📝</button><button class="ib" data-a="card1" title="بطاقة الطالب">📄</button><button class="ib" data-a="del-st" title="حذف">🗑️</button></td></tr>';
+  return h + '<td><button class="ib" data-a="edit-st" title="تعديل">✏️</button><button class="ib" data-a="note" title="ملاحظة للبطاقة">📝</button><button class="ib" data-a="card1" title="بطاقة الطالب">📄</button><button class="ib" data-a="del-st" title="حذف">🗑️</button></td></tr>';
 }
 function avgRowHtml(L) {
   var h = '<tr class="avg"><td class="n">معدل الصف</td>';
@@ -435,6 +435,51 @@ function openCopyNames() {
   modal('<h3>نسخ الأسماء إلى مواد أخرى</h3><p class="note">تنسخ الأسماء فقط (بدون درجات)، والأسماء الموجودة ما تتكرر.</p>' +
     others.map(function (L) { return '<label class="chk"><input type="checkbox" data-cp="' + esc(L.id) + '"> ' + esc(listLabel(L)) + '</label>'; }).join('') +
     '<div class="row"><button class="btn" data-a="copy-ok">نسخ</button><button class="btn-l" data-a="close">إلغاء</button></div>');
+}
+
+function openStudentForm(idx) {
+  var L = getList();
+  var s = idx >= 0 ? L.students[idx] : blank('');
+  var isNew = idx < 0;
+  var labels = { m1:'شهر 1 (فصل 1)', m2:'شهر 2 (فصل 1)', m3:'شهر 3 (فصل 1)', hy:'نصف السنة', n1:'شهر 1 (فصل 2)', n2:'شهر 2 (فصل 2)', ex:'الامتحان النهائي' };
+  var fields = INPUTS.map(function (k) {
+    return '<div><label class="f">' + labels[k] + '</label><input class="in" data-sk="' + k + '" type="text" inputmode="decimal" value="' + esc(s[k] || '') + '" style="text-align:center"></div>';
+  }).join('');
+  modal('<h3>' + (isNew ? 'إضافة طالب' : 'تعديل الطالب') + '</h3>' +
+    '<div><label class="f">اسم الطالب</label><input class="in" id="sf-name" value="' + esc(s.name || '') + '" autofocus></div>' +
+    '<div style="display:grid;gap:10px;margin-top:10px">' + fields + '</div>' +
+    '<div class="row" style="margin-top:12px"><button class="btn" data-a="sf-save" data-idx="' + idx + '">حفظ</button><button class="btn-l" data-a="close">إلغاء</button></div>');
+  setTimeout(function () {
+    var name = $('sf-name'); if (name) name.focus();
+    var inputs = document.querySelectorAll('[data-sk]');
+    inputs.forEach(function (inp, i) {
+      inp.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          if (i < inputs.length - 1) inputs[i + 1].focus();
+          else document.querySelector('[data-a="sf-save"]').focus();
+        }
+      });
+    });
+  }, 50);
+}
+function saveStudentForm(idx) {
+  var L = getList();
+  var name = ($('sf-name') && $('sf-name').value.trim()) || '';
+  if (!name) { toast('اكتب اسم الطالب'); return; }
+  var s = idx >= 0 ? L.students[idx] : blank(name);
+  s.name = name;
+  document.querySelectorAll('[data-sk]').forEach(function (inp) {
+    var k = inp.getAttribute('data-sk');
+    var v = inp.value.trim();
+    s[k] = (v && num(v) != null) ? String(num(v)) : '';
+  });
+  if (idx < 0) {
+    if (needRoom(1) < 1) return;
+    L.students.push(s);
+  }
+  save(); closeModal(); renderTable();
+  toast(idx >= 0 ? 'تم التعديل' : 'تمت إضافة الطالب');
 }
 function openImport() {
   modal('<h3>استيراد طلاب</h3><p class="note">الصق الأسماء (اسم بكل سطر)، أو الصق من Excel: الاسم ثم الدرجات مفصولة بـ Tab بالترتيب (شهر1، شهر2، شهر3، نصف السنة، ف2 شهر1، ف2 شهر2، الامتحان). أو اختر ملف CSV/TXT أو ملف Excel (.xlsx) مصدر من نفس البرنامج.</p>' +
@@ -1042,11 +1087,9 @@ document.addEventListener('click', function (e) {
       db.lists = db.lists.filter(function (x) { return x.id !== L.id; }); db.cur = db.lists[0].id; save(); renderAll();
     }
   }
-  else if (a === 'add') {
-    if (needRoom(1) < 1) return;
-    L.students.push(blank('')); save(); filter = 'all'; query = ''; $('q').value = ''; document.querySelectorAll('[data-f]').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-f') === 'all'); });
-    renderTable(); var inp = document.querySelectorAll('[data-nm]'); if (inp.length) { var last = inp[inp.length - 1]; last.focus(); last.scrollIntoView({ block: 'center' }); }
-  }
+  else if (a === 'add') { openStudentForm(-1); }
+  else if (a === 'edit-st') { var tr = t.closest('tr'); var id = tr && tr.getAttribute('data-id'); var L2 = getList(); var ix = L2.students.findIndex(function (x) { return x.id === id; }); if (ix >= 0) openStudentForm(ix); }
+  else if (a === 'sf-save') { saveStudentForm(Number(t.getAttribute('data-idx'))); }
   else if (a === 'import') openImport();
   else if (a === 'imp-ok') { var tx = $('imp-t').value; closeModal(); doImport(tx); }
   else if (a === 'export') exportXlsx();
