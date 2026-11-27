@@ -240,6 +240,7 @@ input[type=checkbox][data-sel], input[type=checkbox][data-selall] { width: 18px;
 <div class="toast" id="toast" role="status"></div>
 <div id="print-root" aria-hidden="true"></div>
 
+<script src="intro.js"></script>
 <script>
 (function () {
 'use strict';
@@ -993,6 +994,13 @@ function setCfg(t) {
 window.addEventListener('beforeunload', function () { try { localStorage.setItem(KEY, JSON.stringify(db)); } catch (e) {} });
 
 loadLic(); load(); renderAll(); licVerifyBoot();
+try { if (window.MIntro) MIntro.mount({ key: 'grades', accent: '#1F4FBF', last: 'ابدأ', slides: [
+  { art: 'grid', t: 'سجل درجات الطلاب', p: 'سجّل درجات طلابك بجدول مثل الإكسل: الأشهر ونصف السنة والامتحان النهائي. تنتقل بزر Enter وتلصق من Excel.' },
+  { art: 'calc', t: 'الحساب تلقائي', p: 'المعدلات والدرجة النهائية والنجاح والرسوب تنحسب لحالها وتتلون. وتقدر تغيّر حد النجاح.' },
+  { art: 'doc', t: 'بطاقات وتصدير', p: 'اطبع بطاقات الطلاب أو احفظها ملف Word بأربع تصاميم، وصدّر الجدول إلى Excel.' },
+  { art: 'lock', t: 'بياناتك عندك', p: 'كل شي يتخزن على جهازك فقط ويشتغل بدون إنترنت. خذ نسخة احتياطية من وقت لوقت.' },
+  { art: 'key', t: 'تجريبي ثم كود', p: 'جرّب مجاناً لحد 10 طلاب. لعدد أكبر اطلب كود تفعيل من زر «تفعيل / كود».' }
+] }); } catch (e) {}
 try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
 if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) { try { navigator.serviceWorker.register('sw.js'); } catch (e) {} }
 })();
