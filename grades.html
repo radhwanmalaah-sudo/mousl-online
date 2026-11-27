@@ -437,9 +437,11 @@ function openCopyNames() {
     '<div class="row"><button class="btn" data-a="copy-ok">نسخ</button><button class="btn-l" data-a="close">إلغاء</button></div>');
 }
 function openImport() {
-  modal('<h3>استيراد طلاب</h3><p class="note">الصق الأسماء (اسم بكل سطر)، أو الصق من Excel: الاسم ثم الدرجات مفصولة بـ Tab بالترتيب (شهر1، شهر2، شهر3، نصف السنة، ف2 شهر1، ف2 شهر2، الامتحان). أو اختر ملف CSV/TXT.</p>' +
+  modal('<h3>استيراد من Excel</h3><p class="note">اختر ملف Excel (.xlsx) مصدّر من هذه الصفحة، أو أي ملف فيه العمود الأول اسم الطالب والأعمدة التالية الدرجات بالترتيب.</p>' +
+    '<div class="row" style="margin-top:8px"><label class="btn" style="cursor:pointer">📂 اختيار ملف Excel<input type="file" id="f-xlsx" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden></label><button class="btn-l" data-a="close">إلغاء</button></div>' +
+    '<p class="note" style="margin-top:10px">أو الصق نص (اسم بكل سطر أو مفصول بـ Tab):</p>' +
     '<textarea id="imp-t" placeholder="أحمد علي&#10;زينب حسن"></textarea>' +
-    '<div class="row" style="margin-top:8px"><label class="btn-l" style="cursor:pointer">📂 اختيار ملف<input type="file" id="f-imp" accept=".csv,.txt,text/plain,text/csv" hidden></label><button class="btn" data-a="imp-ok">استيراد</button><button class="btn-l" data-a="close">إلغاء</button></div>');
+    '<div class="row" style="margin-top:8px"><button class="btn" data-a="imp-ok">استيراد النص</button></div>');
 }
 /* ---------- استيراد / تصدير ---------- */
 function splitLine(line) { return line.indexOf('\t') >= 0 ? line.split('\t') : line.split(','); }
@@ -456,6 +458,73 @@ function doImport(text) {
   });
   save(); renderTable(); toast('تمت إضافة ' + added + ' طالب' + (skipped ? ' (تخطيت ' + skipped + ' بسبب الحد)' : '')); if (skipped) openLic('limit');
 }
+
+/* ---- استيراد من Excel ---- */
+function unzip(buf) {
+  var dv = new DataView(buf), files = {}, i = 0;
+  while (i < buf.byteLength - 4) {
+    var sig = dv.getUint32(i, true);
+    if (sig !== 0x04034b50) break;
+    var comp = dv.getUint16(i + 8, true);
+    var clen = dv.getUint32(i + 18, true);
+    var ulen = dv.getUint32(i + 22, true);
+    var nlen = dv.getUint16(i + 26, true);
+    var elen = dv.getUint16(i + 28, true);
+    var name = new TextDecoder().decode(new Uint8Array(buf, i + 30, nlen));
+    var dataStart = i + 30 + nlen + elen;
+    if (comp === 0) {
+      files[name] = new Uint8Array(buf, dataStart, clen);
+    }
+    i = dataStart + clen;
+  }
+  return files;
+}
+function parseSheet(xml) {
+  var rows = [];
+  var re = /<row[^>]*>([\s\S]*?)<\/row>/g, m;
+  while ((m = re.exec(xml))) {
+    var cells = [], cre = /<c[^>]*>(?:<v>([^<]*)<\/v>)?/g, cm;
+    while ((cm = cre.exec(m[1]))) {
+      cells.push(cm[1] || '');
+    }
+    if (cells.length) rows.push(cells);
+  }
+  return rows;
+}
+function importXlsx(buf) {
+  try {
+    var files = unzip(buf);
+    var sheet = files['xl/worksheets/sheet1.xml'];
+    if (!sheet) { toast('ما لقيت ورقة في الملف'); return; }
+    var xml = new TextDecoder().decode(sheet);
+    var rows = parseSheet(xml);
+    if (!rows.length) { toast('الملف فاضي'); return; }
+    var L = getList(), added = 0, skipped = 0, room = roomLeft();
+    // skip header rows (look for first row that has a name-like first cell)
+    var start = 0;
+    for (var r = 0; r < rows.length; r++) {
+      var first = (rows[r][0] || '').trim();
+      if (first && !/اسم|طالب|المدرسة|المادة|الصف/.test(first) && isNaN(Number(first))) { start = r; break; }
+    }
+    for (var i = start; i < rows.length; i++) {
+      var cells = rows[i];
+      var name = (cells[0] || '').trim();
+      if (!name) continue;
+      if (added >= room) { skipped++; continue; }
+      var s = blank(name);
+      for (var c = 0; c < INPUTS.length; c++) {
+        var v = cells[c + 1];
+        if (v != null && v !== '' && num(v) != null) s[INPUTS[c]] = String(num(v));
+      }
+      L.students.push(s); added++;
+    }
+    save(); renderTable();
+    toast('تم استيراد ' + added + ' طالب' + (skipped ? ' (تخطيت ' + skipped + ')' : ''));
+    if (skipped) openLic('limit');
+    closeModal();
+  } catch (e) { toast('ما قدرت أقرأ الملف: ' + (e.message || '')); }
+}
+
 function printTable() {
   var L = getList(); setPage('landscape');
   var h = '<h1>سجل درجات الطلاب — ' + esc(listLabel(L)) + '</h1><div>المدرسة: ' + esc(L.school) + ' · المعلم: ' + esc(L.teacher) + ' · العام الدراسي: ' + esc(L.year) + '</div>';
@@ -901,6 +970,7 @@ document.addEventListener('click', function (e) {
     renderTable(); var inp = document.querySelectorAll('[data-nm]'); if (inp.length) { var last = inp[inp.length - 1]; last.focus(); last.scrollIntoView({ block: 'center' }); }
   }
   else if (a === 'import') openImport();
+  else if (a === 'imp-ok') { var tx = $('imp-t') && $('imp-t').value; if (tx) doImport(tx); }
   else if (a === 'imp-ok') { var tx = $('imp-t').value; closeModal(); doImport(tx); }
   else if (a === 'export') exportXlsx();
   else if (a === 'print') printTable();
