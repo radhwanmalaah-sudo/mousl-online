@@ -286,6 +286,7 @@ function renderAll() {
 }
 
 function dKey(d) { return String(d.name || '').replace(/\s+/g, ' ').trim().toLowerCase() + '|' + (d.phone || ''); }
+var openKeys = {};
 function groupOpen(d) { var k = dKey(d); return debts.filter(function (x) { return x.status !== 'paid' && remaining(x) > 0 && dKey(x) === k; }); }
 function remaining(d) { return Math.max(0, (Number(d.amount) || 0) - (Number(d.paid) || 0)); }
 
@@ -341,8 +342,10 @@ function renderList() {
         '</div>';
     }).join('');
     var firstId = g.items[0].id;
+    var isOpen = !!openKeys[k];
     return '<div class="card debt">' +
-      '<div class="row"><div class="name">' + esc(g.name) + '</div><span class="price">' + money(g.totalRem, cur) + '</span></div>' +
+      '<div class="row" data-act="toggle" data-k="' + esc(k) + '" style="cursor:pointer"><div class="name">' + esc(g.name) + ' <span class="meta">' + (isOpen ? '▲' : '▼') + '</span></div><span class="price">' + money(g.totalRem, cur) + '</span></div>' +
+      '<div' + (isOpen ? '' : ' hidden') + '>' +
       (g.phone ? '<div class="meta">' + esc(g.phone) + '</div>' : '') +
       (g.totalPaid > 0 ? '<div class="meta paid">مسدّد: ' + money(g.totalPaid, cur) + '</div>' : '') +
       '<div style="margin-top:6px">' + itemsHtml + '</div>' +
@@ -351,7 +354,7 @@ function renderList() {
       '<button class="btn-line" data-act="newsale" data-id="' + esc(firstId) + '">بيع جديد</button>' +
       '<button class="btn-line" data-act="remind" data-id="' + esc(firstId) + '">تذكير واتساب</button>' +
       '<button class="btn-line" data-act="share" data-id="' + esc(firstId) + '">مشاركة</button>' +
-      '</div></div>';
+      '</div></div></div>';
   }).join('');
 }
 
@@ -669,6 +672,7 @@ document.addEventListener('click', function (e) {
   if (!t) return;
   var a = t.dataset.act, id = t.dataset.id;
   if (a === 'tab') { if (t.dataset.tab === 'add' && !$('prevbox').hidden) resetAddForm(); showTab(t.dataset.tab); return; }
+  if (a === 'toggle') { var kk = t.dataset.k; if (openKeys[kk]) delete openKeys[kk]; else openKeys[kk] = 1; renderList(); return; }
   if (a === 'logout') { logout(); return; }
   if (a === 'install') { installApp($('instmsg')); return; }
   if (a === 'export-csv') { doExport('download'); return; }
