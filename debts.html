@@ -318,25 +318,37 @@ function renderList() {
     return;
   }
   var cur = (ad && ad.currency) || 'iqd';
-  list.innerHTML = open.map(function (d) {
-    var rem = remaining(d);
-    var dateStr = d.date || (d.createdAt ? dayKey(d.createdAt) : '');
-    var method = d.lastPayMethod === 'electronic' ? 'إلكتروني' : (d.lastPayMethod === 'cash' ? 'نقدي' : '');
-    return '<div class="card debt" data-id="' + esc(d.id) + '">' +
-      '<div class="row"><div class="name">' + esc(d.name) + '</div><span class="price">' + money(rem, cur) + '</span></div>' +
-      (d.item ? '<div class="meta">المادة: ' + esc(d.item) + '</div>' : '') +
-      (d.cost > 0 ? '<div class="meta">كلفة: ' + money(d.cost, cur) + ' · ربح: ' + money((d.amount||0)-(d.cost||0), cur) + '</div>' : '') +
-      (dateStr ? '<div class="meta">التاريخ: ' + esc(dateStr) + '</div>' : '') +
-      (d.phone ? '<div class="meta">' + esc(d.phone) + '</div>' : '') +
-      (d.note ? '<div class="meta">' + esc(d.note) + '</div>' : '') +
-      (d.paid > 0 ? '<div class="meta paid">مسدّد: ' + money(d.paid, cur) + (method ? ' (' + method + ')' : '') + '</div>' : '') +
-      '<div class="btns">' +
-      '<button class="btn-ok" data-act="pay" data-id="' + esc(d.id) + '">تسديد</button>' +
-      '<button class="btn-line" data-act="newsale" data-id="' + esc(d.id) + '">بيع جديد</button>' +
-      '<button class="btn-line" data-act="remind" data-id="' + esc(d.id) + '">تذكير واتساب</button>' +
-      '<button class="btn-line" data-act="edit" data-id="' + esc(d.id) + '">تعديل</button>' +
-      '<button class="btn-line" data-act="share" data-id="' + esc(d.id) + '">مشاركة</button>' +
-      '<button class="btn-line btn-danger" data-act="del" data-id="' + esc(d.id) + '">حذف</button>' +
+  var groups = {};
+  open.forEach(function (d) {
+    var k = String(d.name || '').replace(/\s+/g, ' ').trim().toLowerCase() + '|' + (d.phone || '');
+    if (!groups[k]) groups[k] = { name: d.name, phone: d.phone, items: [], totalRem: 0, totalPaid: 0 };
+    groups[k].items.push(d);
+    groups[k].totalRem += remaining(d);
+    groups[k].totalPaid += Number(d.paid) || 0;
+  });
+  list.innerHTML = Object.keys(groups).map(function (k) {
+    var g = groups[k];
+    var itemsHtml = g.items.map(function (d) {
+      var rem = remaining(d);
+      var dateStr = d.date || (d.createdAt ? dayKey(d.createdAt) : '');
+      return '<div class="meta" style="padding:4px 0;border-top:1px solid var(--line)">' +
+        esc(d.item || '—') + ' · ' + money(rem, cur) +
+        (dateStr ? ' · ' + esc(dateStr) : '') +
+        ' <button class="btn-line" style="padding:2px 8px;font-size:12px" data-act="pay" data-id="' + esc(d.id) + '">تسديد</button>' +
+        ' <button class="btn-line" style="padding:2px 8px;font-size:12px" data-act="edit" data-id="' + esc(d.id) + '">تعديل</button>' +
+        ' <button class="btn-line btn-danger" style="padding:2px 8px;font-size:12px" data-act="del" data-id="' + esc(d.id) + '">حذف</button>' +
+        '</div>';
+    }).join('');
+    var firstId = g.items[0].id;
+    return '<div class="card debt">' +
+      '<div class="row"><div class="name">' + esc(g.name) + '</div><span class="price">' + money(g.totalRem, cur) + '</span></div>' +
+      (g.phone ? '<div class="meta">' + esc(g.phone) + '</div>' : '') +
+      (g.totalPaid > 0 ? '<div class="meta paid">مسدّد: ' + money(g.totalPaid, cur) + '</div>' : '') +
+      '<div style="margin-top:6px">' + itemsHtml + '</div>' +
+      '<div class="btns" style="margin-top:8px">' +
+      '<button class="btn-line" data-act="newsale" data-id="' + esc(firstId) + '">بيع جديد</button>' +
+      '<button class="btn-line" data-act="remind" data-id="' + esc(firstId) + '">تذكير واتساب</button>' +
+      '<button class="btn-line" data-act="share" data-id="' + esc(firstId) + '">مشاركة</button>' +
       '</div></div>';
   }).join('');
 }
