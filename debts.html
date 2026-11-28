@@ -555,9 +555,9 @@ function doExport(mode) {
       var file = null;
       try { file = new File([blob], xlsxName(), { type: XMIME }); } catch (e) {}
       if (file && navigator.canShare && navigator.share && navigator.canShare({ files: [file] })) {
-        return navigator.share({ files: [file], title: 'نسخة احتياطية - دفتر الديون' }).then(bkSet).catch(function (e) { if (!e || e.name !== 'AbortError') bkErr('ما كدرت أشارك. جرّب التصدير.'); });
+        return navigator.share({ files: [file], title: 'نسخة احتياطية - دفتر الديون' }).then(bkSet).catch(function (e) { if (!e || e.name !== 'AbortError') { bkErr('المشاركة ما اشتغلت، نزّلت الملف بدالها. افتحه من التنزيلات وأرسله من واتساب.'); downloadBlob(blob); } });
       }
-      bkErr('المشاركة مو مدعومة بهذا المتصفح، نزّلت الملف. أرسله يدوياً.');
+      bkErr('المتصفح ما يدعم مشاركة هذا الملف، نزّلت الملف. افتحه من التنزيلات وأرسله من واتساب.');
     }
     downloadBlob(blob);
   });
