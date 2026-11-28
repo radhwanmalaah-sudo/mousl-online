@@ -336,7 +336,6 @@ function renderList() {
       return '<div class="meta" style="padding:4px 0;border-top:1px solid var(--line)">' +
         esc(d.item || '—') + ' · ' + money(rem, cur) +
         (dateStr ? ' · ' + esc(dateStr) : '') +
-        ' <button class="btn-line" style="padding:2px 8px;font-size:12px" data-act="pay" data-id="' + esc(d.id) + '">تسديد</button>' +
         ' <button class="btn-line" style="padding:2px 8px;font-size:12px" data-act="edit" data-id="' + esc(d.id) + '">تعديل</button>' +
         ' <button class="btn-line btn-danger" style="padding:2px 8px;font-size:12px" data-act="del" data-id="' + esc(d.id) + '">حذف</button>' +
         '</div>';
@@ -348,6 +347,7 @@ function renderList() {
       (g.totalPaid > 0 ? '<div class="meta paid">مسدّد: ' + money(g.totalPaid, cur) + '</div>' : '') +
       '<div style="margin-top:6px">' + itemsHtml + '</div>' +
       '<div class="btns" style="margin-top:8px">' +
+      '<button class="btn-line" data-act="payall" data-id="' + esc(firstId) + '">تسديد</button>' +
       '<button class="btn-line" data-act="newsale" data-id="' + esc(firstId) + '">بيع جديد</button>' +
       '<button class="btn-line" data-act="remind" data-id="' + esc(firstId) + '">تذكير واتساب</button>' +
       '<button class="btn-line" data-act="share" data-id="' + esc(firstId) + '">مشاركة</button>' +
@@ -674,6 +674,41 @@ document.addEventListener('click', function (e) {
   if (a === 'export-csv') { doExport('download'); return; }
   if (a === 'share-csv') { doExport('share'); return; }
   if (a === 'print-rep') { doPrint(); return; }
+  if (a === 'payall' && id) {
+    var d0 = debts.filter(function (x) { return x.id === id; })[0];
+    if (!d0) return;
+    var grp = groupOpen(d0).sort(function (x, y) { return (Number(x.createdAt) || 0) - (Number(y.createdAt) || 0); });
+    var tot = grp.reduce(function (s, x) { return s + remaining(x); }, 0);
+    var raw = prompt('إجمالي حساب ' + (d0.name || '') + ': ' + money(tot, d0.currency || 'iqd') + '\nكم تسديد؟ (اتركه فارغ لتسديد الكل)', '');
+    if (raw === null) return;
+    var left = raw.trim() === '' ? tot : parseNum(raw);
+    if (!left || left <= 0) return;
+    if (left > tot) left = tot;
+    var method = prompt('طريقة الدفع: اكتب 1 للنقدي أو 2 للإلكتروني', '1');
+    if (method === null) return;
+    var payMethod = (method.trim() === '2' || /الكترون|تحويل|online/i.test(method)) ? 'electronic' : 'cash';
+    var now = Date.now(), batch = db.batch();
+    grp.forEach(function (d) {
+      if (left <= 0) return;
+      var pay = Math.min(left, remaining(d)); if (pay <= 0) return;
+      left -= pay;
+      var newPaid = (Number(d.paid) || 0) + pay;
+      var payments = Array.isArray(d.payments) ? d.payments.slice() : [];
+      payments.push({ amount: pay, method: payMethod, at: now });
+      if (payments.length > 30) payments = payments.slice(-30);
+      var patch = {
+        paid: newPaid,
+        status: newPaid >= (Number(d.amount) || 0) - 0.01 ? 'paid' : 'open',
+        cashPaid: (Number(d.cashPaid) || 0) + (payMethod === 'cash' ? pay : 0),
+        cardPaid: (Number(d.cardPaid) || 0) + (payMethod === 'electronic' ? pay : 0),
+        payments: payments, lastPayAt: now, lastPayAmount: pay, lastPayMethod: payMethod
+      };
+      if (patch.status === 'paid') patch.paidAt = now;
+      batch.update(db.collection('debts').doc(d.id), patch);
+    });
+    batch.commit().catch(function (e) { alert(e.message || 'ما انحفظ'); });
+    return;
+  }
   if (a === 'pay' && id) {
     var d = debts.filter(function (x) { return x.id === id; })[0];
     if (!d) return;
