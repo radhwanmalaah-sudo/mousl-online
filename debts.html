@@ -321,10 +321,13 @@ function renderList() {
   var groups = {};
   open.forEach(function (d) {
     var k = String(d.name || '').replace(/\s+/g, ' ').trim().toLowerCase() + '|' + (d.phone || '');
-    if (!groups[k]) groups[k] = { name: d.name, phone: d.phone, items: [], totalRem: 0, totalPaid: 0 };
+    if (!groups[k]) groups[k] = { name: d.name, phone: d.phone, items: [], totalRem: 0, totalPaid: 0, cashPaid: 0, cardPaid: 0, totalAmount: 0 };
     groups[k].items.push(d);
     groups[k].totalRem += remaining(d);
     groups[k].totalPaid += Number(d.paid) || 0;
+    groups[k].cashPaid += Number(d.cashPaid) || 0;
+    groups[k].cardPaid += Number(d.cardPaid) || 0;
+    groups[k].totalAmount += Number(d.amount) || 0;
   });
   list.innerHTML = Object.keys(groups).map(function (k) {
     var g = groups[k];
@@ -340,10 +343,18 @@ function renderList() {
         '</div>';
     }).join('');
     var firstId = g.items[0].id;
+    var payInfo = '';
+    if (g.cashPaid > 0 || g.cardPaid > 0) {
+      payInfo = '<div class="meta paid">مسدّد: ' + money(g.totalPaid, cur);
+      if (g.cashPaid > 0) payInfo += ' · نقدي ' + money(g.cashPaid, cur);
+      if (g.cardPaid > 0) payInfo += ' · بطاقة ' + money(g.cardPaid, cur);
+      payInfo += '</div>';
+    }
     return '<div class="card debt">' +
       '<div class="row"><div class="name">' + esc(g.name) + '</div><span class="price">' + money(g.totalRem, cur) + '</span></div>' +
+      '<div class="meta">الإجمالي: ' + money(g.totalAmount, cur) + '</div>' +
       (g.phone ? '<div class="meta">' + esc(g.phone) + '</div>' : '') +
-      (g.totalPaid > 0 ? '<div class="meta paid">مسدّد: ' + money(g.totalPaid, cur) + '</div>' : '') +
+      payInfo +
       '<div style="margin-top:6px">' + itemsHtml + '</div>' +
       '<div class="btns" style="margin-top:8px">' +
       '<button class="btn-line" data-act="newsale" data-id="' + esc(firstId) + '">بيع جديد</button>' +
