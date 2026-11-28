@@ -285,6 +285,8 @@ function renderAll() {
   renderBackupInfo();
 }
 
+function dKey(d) { return String(d.name || '').replace(/\s+/g, ' ').trim().toLowerCase() + '|' + (d.phone || ''); }
+function groupOpen(d) { var k = dKey(d); return debts.filter(function (x) { return x.status !== 'paid' && remaining(x) > 0 && dKey(x) === k; }); }
 function remaining(d) { return Math.max(0, (Number(d.amount) || 0) - (Number(d.paid) || 0)); }
 
 function renderList() {
@@ -735,6 +737,11 @@ document.addEventListener('click', function (e) {
       (sd.date ? '\nالتاريخ: ' + sd.date : '') +
       (sd.note ? '\n' + sd.note : '') +
       '\n\nمن ' + (ad && ad.shop || 'المحل');
+    var gs = groupOpen(sd);
+    if (gs.length > 1) {
+      msg = 'حساب ' + (sd.name || '') + '\n' + gs.map(function (x) { return '• ' + (x.item || '—') + ': ' + money(remaining(x), cur) + (x.date ? ' (' + x.date + ')' : ''); }).join('\n') +
+        '\nالمجموع المتبقي: ' + money(gs.reduce(function (a, x) { return a + remaining(x); }, 0), cur) + '\n\nمن ' + (ad && ad.shop || 'المحل');
+    }
     if (navigator.share) {
       navigator.share({ title: 'حساب ' + (sd.name || ''), text: msg }).catch(function () {});
     } else {
@@ -775,6 +782,14 @@ document.addEventListener('click', function (e) {
       (rd.item ? 'المادة: ' + rd.item + '\n' : '') +
       'المبلغ المتبقي: ' + money(rem2, cur2) + '\n' +
       'يرجى التسديد في أقرب وقت. شكراً.';
+    var gr = groupOpen(rd);
+    if (gr.length > 1) {
+      rmsg = 'السلام عليكم ' + (rd.name || '') + '،\n' +
+        'تذكير بحسابك لدى ' + (ad && ad.shop || 'المحل') + ':\n' +
+        gr.map(function (x) { return '• ' + (x.item || '—') + ': ' + money(remaining(x), cur2); }).join('\n') +
+        '\nالمجموع المتبقي: ' + money(gr.reduce(function (a, x) { return a + remaining(x); }, 0), cur2) + '\n' +
+        'يرجى التسديد في أقرب وقت. شكراً.';
+    }
     var phone = (rd.phone || '').replace(/\s+/g, '');
     if (phone) {
       var waNum = phone.replace(/^0/, '964').replace(/^\+/, '');
