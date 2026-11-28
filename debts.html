@@ -687,14 +687,26 @@ document.addEventListener('click', function (e) {
     var d = debts.filter(function (x) { return x.id === id; })[0];
     if (!d) return;
     var rem = remaining(d);
-    var raw = prompt('كم تسديد؟ (اتركه فارغ لتسديد كامل ' + money(rem, d.currency || 'iqd') + ')', '');
-    if (raw === null) return;
-    var pay = raw.trim() === '' ? rem : parseNum(raw);
-    if (!pay || pay <= 0) return;
+    var cur = d.currency || (ad && ad.currency) || 'iqd';
+    modal('<h3>تسديد — ' + esc(d.name) + '</h3>' +
+      '<p class="note">المتبقي: <b>' + money(rem, cur) + '</b></p>' +
+      '<div><label class="f">المبلغ</label><input class="in" id="pay-amt" type="text" inputmode="decimal" value="' + rem + '" style="text-align:center"></div>' +
+      '<div class="row" style="margin-top:12px;gap:8px">' +
+      '<button class="btn" data-act="do-pay" data-id="' + esc(id) + '" data-m="cash" style="flex:1">نقدي</button>' +
+      '<button class="btn" data-act="do-pay" data-id="' + esc(id) + '" data-m="electronic" style="flex:1;background:#1F4FBF">إلكتروني</button>' +
+      '</div>' +
+      '<div class="row" style="margin-top:8px"><button class="btn-l" data-act="close" style="flex:1">إلغاء</button></div>');
+    return;
+  }
+  if (a === 'do-pay' && id) {
+    var d = debts.filter(function (x) { return x.id === id; })[0];
+    if (!d) return;
+    var rem = remaining(d);
+    var raw = ($('pay-amt') && $('pay-amt').value.trim()) || '';
+    var pay = raw === '' ? rem : parseNum(raw);
+    if (!pay || pay <= 0) { toast('اكتب مبلغ صحيح'); return; }
     if (pay > rem) pay = rem;
-    var method = prompt('طريقة الدفع: اكتب 1 للنقدي أو 2 للإلكتروني', '1');
-    if (method === null) return;
-    var payMethod = (method.trim() === '2' || /الكترون|تحويل|online/i.test(method)) ? 'electronic' : 'cash';
+    var payMethod = t.getAttribute('data-m') === 'electronic' ? 'electronic' : 'cash';
     var newPaid = (Number(d.paid) || 0) + pay;
     var status = newPaid >= (Number(d.amount) || 0) - 0.01 ? 'paid' : 'open';
     var cashPaid = (Number(d.cashPaid) || 0) + (payMethod === 'cash' ? pay : 0);
@@ -713,6 +725,7 @@ document.addEventListener('click', function (e) {
       lastPayMethod: payMethod
     };
     if (status === 'paid') patch.paidAt = Date.now();
+    closeModal();
     db.collection('debts').doc(id).update(patch).catch(function (e) { alert(e.message || 'ما انحفظ'); });
     return;
   }
